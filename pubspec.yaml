@@ -1,26 +1,51 @@
-name: face_attendance
+name: face_attendance_flutter
 description: Ứng dụng điểm danh sinh viên bằng khuôn mặt
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
+
+  # Thư viện icon mặc định
   cupertino_icons: ^1.0.8
+
+  # Dùng font đẹp (Poppins, Roboto, Inter, v.v.)
+  google_fonts: ^6.2.1
+
+  # Gọi API Laravel backend
   http: ^1.2.1
-  provider: ^6.1.1
+
+  # Lưu token (JWT hoặc Sanctum)
   flutter_secure_storage: ^9.2.2
-  qr_code_scanner: ^1.0.1
-  camera: ^0.11.0
-  image_picker: ^1.0.7
-  path_provider: ^2.1.3
-  google_mlkit_face_detection: ^0.10.0
+
+  # Hiển thị thông báo
   fluttertoast: ^8.2.4
+
+  # Quản lý trạng thái (sau này dùng cho login, role)
+  provider: ^6.1.1
+
+  # Chụp ảnh / chọn ảnh cho nhận diện khuôn mặt
+  image_picker: ^1.0.7
+
+  # Quét mã QR cho điểm danh
+  qr_code_scanner: ^1.0.1
+
+  # Truy cập file hệ thống
+  path_provider: ^2.1.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Thư mục chứa hình ảnh, icon
+  assets:
+    - assets/images/
+    - assets/icons/
