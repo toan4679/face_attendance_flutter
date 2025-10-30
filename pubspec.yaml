@@ -10,31 +10,32 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Thư viện icon mặc định
+  # Font & icon
   cupertino_icons: ^1.0.8
-
-  # Dùng font đẹp (Poppins, Roboto, Inter, v.v.)
   google_fonts: ^6.2.1
 
-  # Gọi API Laravel backend
+  # HTTP & REST API
+  dio: ^5.4.0
   http: ^1.2.1
 
-  # Lưu token (JWT hoặc Sanctum)
-  flutter_secure_storage: ^9.2.2
+  # Quản lý trạng thái & dependency
+  provider: ^6.1.1
+  get_it: ^7.6.7
 
-  # Hiển thị thông báo
+  # Lưu token & biến môi trường
+  flutter_secure_storage: ^9.2.2
+  flutter_dotenv: ^5.1.0
+
+  # Routing
+  go_router: ^14.1.0
+
+  # Format & tiện ích
+  intl: ^0.19.0
   fluttertoast: ^8.2.4
 
-  # Quản lý trạng thái (sau này dùng cho login, role)
-  provider: ^6.1.1
-
-  # Chụp ảnh / chọn ảnh cho nhận diện khuôn mặt
+  # Tính năng phần cứng
   image_picker: ^1.0.7
-
-  # Quét mã QR cho điểm danh
   qr_code_scanner: ^1.0.1
-
-  # Truy cập file hệ thống
   path_provider: ^2.1.3
 
 dev_dependencies:
@@ -45,7 +46,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Thư mục chứa hình ảnh, icon
   assets:
     - assets/images/
     - assets/icons/
+    - .env
