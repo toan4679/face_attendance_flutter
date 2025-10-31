@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-class PDTDashboardScreen extends StatelessWidget {
-  const PDTDashboardScreen({super.key});
+class GiangVienDashboardScreen extends StatelessWidget {
+  const GiangVienDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Phòng Đào Tạo Dashboard')),
+      appBar: AppBar(title: const Text('Giảng viên Dashboard')),
       body: const Center(
         child: Text(
-          'Chào mừng Phòng Đào Tạo 🧾',
+          'Chào mừng Giảng viên 👨‍🏫',
           style: TextStyle(fontSize: 22),
         ),
       ),
