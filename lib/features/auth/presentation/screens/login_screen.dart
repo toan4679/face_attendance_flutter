@@ -54,7 +54,6 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Logo hoặc hình minh họa
                 Container(
                   height: 150,
                   width: 150,
@@ -77,7 +76,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Email
                 TextField(
                   controller: _emailCtl,
                   decoration: _inputDecoration(hintText: 'Nhập Email'),
@@ -86,7 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 18),
 
-                // Password
                 TextField(
                   controller: _passCtl,
                   obscureText: true,
@@ -95,13 +92,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Login button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: auth.isLoading
                         ? null
-                        : () => auth.login(_emailCtl.text, _passCtl.text, 'admin', context),
+                        : () => auth.login(_emailCtl.text, _passCtl.text, context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryPurple,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -117,7 +113,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Register link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -134,7 +129,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 10),
-
                 GestureDetector(
                   onTap: () {},
                   child: const Text('Quên mật khẩu ?',
