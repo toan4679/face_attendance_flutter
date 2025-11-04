@@ -4,6 +4,9 @@ import '../../../../core/network/token_storage.dart';
 import '../controllers/pdt_dashboard_controller.dart';
 import '../../data/models/lop_hoc_phan_model.dart';
 import '../widgets/pdt_dashboard_card.dart';
+import 'package:face_attendance_flutter/features/phong_daotao/presentation/screens/manage_nganh_screen.dart';
+
+
 
 class PdtDashboardScreen extends StatefulWidget {
   const PdtDashboardScreen({super.key});
@@ -32,7 +35,7 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            // 🟣 Header hiển thị user thật
+            // 🟣 Header hiển thị thông tin người dùng
             DrawerHeader(
               decoration: const BoxDecoration(color: Colors.deepPurpleAccent),
               child: FutureBuilder<Map<String, String?>>(
@@ -46,18 +49,20 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('Phòng Đào Tạo',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
+                      const Text(
+                        'PHÒNG ĐÀO TẠO',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           const CircleAvatar(
-                            radius: 24,
-                            backgroundImage:
-                            AssetImage('assets/images/admin_avatar.png'),
+                            radius: 26,
+                            backgroundImage: AssetImage('assets/images/admin_avatar.png'),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -72,7 +77,7 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
                                         color: Colors.white70, fontSize: 13)),
                               ],
                             ),
-                          )
+                          ),
                         ],
                       ),
                     ],
@@ -92,21 +97,43 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
               },
             ),
             _buildDrawerItem(
+              icon: Icons.category,
+              title: 'Quản lý Ngành',
+              isActive: currentPage == 'Ngành',
+              onTap: () {
+                setState(() => currentPage = 'Ngành');
+                Navigator.pop(context); // đóng Drawer trước
+                controller.gotoNganh(context);
+              },
+            ),
+            _buildDrawerItem(
               icon: Icons.book,
               title: 'Quản lý Môn học',
               isActive: currentPage == 'Môn học',
               onTap: () {
                 setState(() => currentPage = 'Môn học');
+                Navigator.pop(context);
                 controller.gotoMonHoc(context);
               },
             ),
             _buildDrawerItem(
               icon: Icons.meeting_room,
-              title: 'Quản lý Lớp học',
-              isActive: currentPage == 'Lớp học',
+              title: 'Quản lý Lớp hành chính',
+              isActive: currentPage == 'Lớp hành chính',
               onTap: () {
-                setState(() => currentPage = 'Lớp học');
-                controller.gotoLopHoc();
+                setState(() => currentPage = 'Lớp hành chính');
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/pdt/lop');
+              },
+            ),
+            _buildDrawerItem(
+              icon: Icons.school,
+              title: 'Quản lý Lớp học phần',
+              isActive: currentPage == 'Lớp học phần',
+              onTap: () {
+                setState(() => currentPage = 'Lớp học phần');
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/pdt/lophocphan');
               },
             ),
             _buildDrawerItem(
@@ -115,16 +142,18 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
               isActive: currentPage == 'Buổi học',
               onTap: () {
                 setState(() => currentPage = 'Buổi học');
-                controller.gotoBuoiHoc();
+                Navigator.pop(context);
+                controller.gotoBuoiHoc(context);
               },
             ),
             _buildDrawerItem(
               icon: Icons.schedule,
-              title: 'Gán lịch cho Giảng viên',
+              title: 'Gán lịch giảng dạy',
               isActive: currentPage == 'Gán lịch',
               onTap: () {
                 setState(() => currentPage = 'Gán lịch');
-                controller.gotoGanLich();
+                Navigator.pop(context);
+                controller.gotoGanLich(context);
               },
             ),
             _buildDrawerItem(
@@ -133,72 +162,52 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
               isActive: currentPage == 'Sinh viên',
               onTap: () {
                 setState(() => currentPage = 'Sinh viên');
-                controller.gotoSinhVien();
+                Navigator.pop(context);
+                controller.gotoSinhVien(context);
               },
             ),
             _buildDrawerItem(
               icon: Icons.image,
-              title: 'Quản lý Dữ liệu ảnh',
-              isActive: currentPage == 'Dữ liệu ảnh',
+              title: 'Quản lý Ảnh sinh viên',
+              isActive: currentPage == 'Ảnh sinh viên',
               onTap: () {
-                setState(() => currentPage = 'Dữ liệu ảnh');
-                controller.gotoAnhSinhVien();
+                setState(() => currentPage = 'Ảnh sinh viên');
+                Navigator.pop(context);
+                controller.gotoAnhSinhVien(context);
               },
             ),
 
             const Divider(),
 
-            // 🚪 Nút Đăng xuất
+            // 🚪 Đăng xuất
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.redAccent),
               title: const Text(
                 'Đăng xuất',
                 style: TextStyle(
-                    color: Colors.redAccent,
-                    fontWeight: FontWeight.normal,
-                    fontSize: 16),
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                ),
               ),
               onTap: () async {
-                // 🔸 Hiện hộp thoại xác nhận
                 final confirm = await showDialog<bool>(
                   context: context,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: const Text(
-                        'Xác nhận đăng xuất',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      content: const Text(
-                          'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống không?'),
-                      shape:
-                      RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      actionsPadding:
-                      const EdgeInsetsDirectional.only(end: 16, bottom: 10),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.grey.shade700,
-                          ),
-                          child: const Text('Huỷ'),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: () => Navigator.of(context).pop(true),
-                          icon: const Icon(Icons.logout, size: 18),
-                          label: const Text('Đăng xuất'),
+                  builder: (context) => AlertDialog(
+                    title: const Text('Xác nhận đăng xuất'),
+                    content: const Text('Bạn có chắc chắn muốn đăng xuất không?'),
+                    actions: [
+                      TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Hủy')),
+                      ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurpleAccent,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                              backgroundColor: Colors.deepPurpleAccent),
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Đăng xuất')),
+                    ],
+                  ),
                 );
-
-                // 🔹 Nếu người dùng chọn “Đăng xuất”
                 if (confirm == true) {
                   await TokenStorage.clearToken();
                   if (context.mounted) {
@@ -211,10 +220,10 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
                 }
               },
             ),
-
           ],
         ),
       ),
+
 
       // 🧩 Nội dung chính (dashboard + bảng lớp học phần)
       body: FutureBuilder(

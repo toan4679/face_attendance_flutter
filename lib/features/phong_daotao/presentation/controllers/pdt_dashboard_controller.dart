@@ -4,6 +4,8 @@ import 'package:face_attendance_flutter/core/network/api_constants.dart';
 import 'package:face_attendance_flutter/core/network/token_storage.dart';
 import '../../data/models/lop_hoc_phan_model.dart';
 import '../screens/manage_monhoc_screen.dart';
+import '../screens/manage_lop_screen.dart';
+
 
 class PdtDashboardController extends ChangeNotifier {
 
@@ -34,16 +36,30 @@ class PdtDashboardController extends ChangeNotifier {
     }
   }
 
-  // Các điều hướng giả lập
-  void gotoMonHoc(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ManageMonHocScreen()),
-    );
-  }
-  void gotoLopHoc() {}
-  void gotoBuoiHoc() {}
-  void gotoGanLich() {}
-  void gotoSinhVien() {}
-  void gotoAnhSinhVien() {}
+  void gotoNganh(BuildContext context) =>
+      Navigator.pushNamed(context, '/pdt/nganh');
+
+  void gotoMonHoc(BuildContext context) =>
+      Navigator.pushNamed(context, '/pdt/monhoc');
+
+  void gotoGiangVien(BuildContext context) =>
+      Navigator.pushNamed(context, '/pdt/giangvien');
+
+  void gotoSinhVien(BuildContext context) =>
+      Navigator.pushNamed(context, '/pdt/sinhvien');
+
+  void gotoLop(BuildContext context) =>
+      Navigator.pushNamed(context, '/pdt/lop');
+
+  void gotoLopHocPhan(BuildContext context) =>
+      Navigator.pushNamed(context, '/pdt/lophocphan');
+
+  void gotoBuoiHoc(BuildContext context) =>
+      Navigator.pushNamed(context, '/pdt/buoihoc');
+
+  void gotoGanLich(BuildContext context) =>
+      Navigator.pushNamed(context, '/pdt/ganlich');
+
+  void gotoAnhSinhVien(BuildContext context) =>
+      Navigator.pushNamed(context, '/pdt/anh');
 }

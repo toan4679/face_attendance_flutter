@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-// ROUTES
+import 'core/theme/app_theme.dart';
 import 'routes/app_router.dart';
 import 'routes/route_names.dart';
 
 // CONTROLLERS
 import 'features/phong_daotao/presentation/controllers/pdt_dashboard_controller.dart';
 import 'features/phong_daotao/presentation/controllers/mon_hoc_controller.dart';
-
-
-// SCREENS
-import 'features/auth/presentation/screens/login_screen.dart';
-import 'features/phong_daotao/presentation/screens/pdt_dashboard_screen.dart';
-
-// THEME
-import 'core/theme/app_theme.dart';
+import 'features/phong_daotao/presentation/controllers/nganh_controller.dart';
+import 'features/phong_daotao/presentation/controllers/lop_controller.dart';
+// import 'features/phong_daotao/presentation/controllers/lophocphan_controller.dart';
+// import 'features/phong_daotao/presentation/controllers/buoihoc_controller.dart';
+// import 'features/phong_daotao/presentation/controllers/sinhvien_controller.dart';
+// import 'features/phong_daotao/presentation/controllers/face_data_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,17 +27,20 @@ class FaceAttendanceApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => PdtDashboardController()),
+        ChangeNotifierProvider(create: (_) => NganhController()),
         ChangeNotifierProvider(create: (_) => MonHocController()),
-        // bạn có thể thêm các Provider khác sau này như AuthController, AdminController...
+        ChangeNotifierProvider(create: (_) => LopController()),
+        // ChangeNotifierProvider(create: (_) => LopHocPhanController()),
+        // ChangeNotifierProvider(create: (_) => BuoiHocController()),
+        // ChangeNotifierProvider(create: (_) => SinhVienController()),
+        // ChangeNotifierProvider(create: (_) => FaceDataController()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Face Attendance System',
-        theme: AppTheme.lightTheme, // tạo trong core/theme/app_theme.dart
+        theme: AppTheme.lightTheme,
         routes: appRoutes,
-        initialRoute: RouteNames.login, // Mặc định mở Login
-        // Nếu bạn muốn test trực tiếp dashboard, dùng:
-        // home: const PdtDashboardScreen(),
+        initialRoute: RouteNames.login,
       ),
     );
   }

@@ -1,22 +1,44 @@
-import 'package:dio/dio.dart';
-import '../../../../core/network/api_constants.dart';
+import 'package:flutter/cupertino.dart';
+
+import '../../../../core/network/api_service.dart';
+import '../../../../core/constants/api_endpoints.dart';
 import '../models/nganh_model.dart';
 
 class NganhRepository {
-  final Dio _dio = Dio(BaseOptions(baseUrl: ApiConstants.baseUrl));
+  final ApiService _api = ApiService();
 
-  Future<List<NganhModel>> getAll(String token) async {
-    try {
-      final response = await _dio.get(
-        '/v1/pdt/nganh',
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
+  Future<List<NganhModel>> getAll() async {
+    final response = await _api.get(ApiEndpoints.pdtNganh);
+    debugPrint('📥 Response ngành: $response');
 
-      final data = response.data as List;
-      return data.map((e) => NganhModel.fromJson(e)).toList();
-    } catch (e) {
-      print('❌ Lỗi lấy danh sách ngành: $e');
-      return [];
+    // ✅ Kiểm tra xem response có chứa trường 'data' (khi Laravel paginate)
+    if (response is Map && response.containsKey('data')) {
+      final list = response['data'] as List;
+      return list.map((e) => NganhModel.fromJson(e)).toList();
     }
+
+    // ✅ Trường hợp API trả thẳng danh sách
+    if (response is List) {
+      return response.map((e) => NganhModel.fromJson(e)).toList();
+    }
+
+    debugPrint('⚠️ Response không phải List hoặc Map chứa data');
+    return [];
+  }
+
+
+
+  Future<NganhModel> create(NganhModel nganh) async {
+    final response = await _api.post(ApiEndpoints.pdtNganh, nganh.toJson());
+    return NganhModel.fromJson(response);
+  }
+
+  Future<NganhModel> update(int id, NganhModel nganh) async {
+    final response = await _api.put('${ApiEndpoints.pdtNganh}/$id', nganh.toJson());
+    return NganhModel.fromJson(response);
+  }
+
+  Future<void> delete(int id) async {
+    await _api.delete('${ApiEndpoints.pdtNganh}/$id');
   }
 }
