@@ -1,23 +1,17 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
-import 'text_styles.dart';
 
 class AppTheme {
-  static ThemeData lightTheme = ThemeData(
-    primaryColor: AppColors.primary,
-    scaffoldBackgroundColor: AppColors.background,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
-      elevation: 0,
-    ),
-    textTheme: AppTextStyles.textTheme,
+  static final ThemeData lightTheme = ThemeData(
+    primarySwatch: Colors.deepPurple,
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
+        backgroundColor: Colors.deepPurpleAccent,
+        foregroundColor: Colors.white, // ✅ chữ trắng cho tất cả ElevatedButton
+        textStyle: const TextStyle(fontWeight: FontWeight.normal),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       ),
     ),
   );

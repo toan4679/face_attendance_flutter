@@ -1,31 +1,46 @@
 class ApiEndpoints {
-  static const login = '/auth/login';
-  static const logout = '/auth/logout';
-  static const refreshToken = '/auth/refresh';
+  // ================== BASE ==================
+  static const String baseUrl = 'http://104.145.210.69/api/v1';
 
-  // Admin
-  static const adminPDT = '/admin/pdt';
-  static const adminResetPassword = '/admin/reset-password';
+  // ================== AUTH ==================
+  static const String login = '$baseUrl/auth/login';
+  static const String register = '$baseUrl/auth/register';
+  static const String logout = '$baseUrl/auth/logout';
+  static const String refresh = '$baseUrl/auth/refresh';
+  static const String changePassword = '$baseUrl/auth/change-password';
 
-  // Phòng đào tạo
-  static const khoa = '/khoa';
-  static const boMon = '/bomon';
-  static const nganh = '/nganh';
-  static const monHoc = '/monhoc';
-  static const giangVien = '/giangvien';
-  static const sinhVien = '/sinhvien';
-  static const lopHocPhan = '/lophocphan';
-  static const buoiHoc = '/buoihoc';
-  static const dangKyHoc = '/dangkyhoc';
-  static const thongBao = '/thongbao';
-  static const khuonMat = '/sinhvien/khuonmat';
+  // ================== ADMIN ==================
+  static const String adminPdt = '$baseUrl/admin/pdt';
+  static const String adminResetPassword = '$baseUrl/admin/reset-password';
 
-  // Giảng viên
-  static const lichDay = '/giangvien/lichday';
-  static const diemDanh = '/buoihoc/{maBuoi}/diemdanh';
+  // ================== PHÒNG ĐÀO TẠO ==================
+  static const String pdtDashboardStats = '$baseUrl/pdt/dashboard/stats';
+  static const String pdtKhoa = '$baseUrl/pdt/khoa';
+  static const String pdtBoMon = '$baseUrl/pdt/bomon';
+  static const String pdtNganh = '$baseUrl/pdt/nganh';
+  static const String pdtMonHoc = '$baseUrl/pdt/monhoc';
+  static const String pdtGiangVien = '$baseUrl/pdt/giangvien';
+  static const String pdtSinhVien = '$baseUrl/pdt/sinhvien';
+  static const String pdtLopHocPhan = '$baseUrl/pdt/lophocphan';
+  static const String pdtBuoiHoc = '$baseUrl/pdt/buoihoc';
+  static const String pdtAssignSchedule = '$baseUrl/pdt/schedule/assign';
+  static const String pdtThongBao = '$baseUrl/pdt/thongbao';
+  static const String pdtKhuonMatPending = '$baseUrl/pdt/khuonmat/pending';
 
-  // Sinh viên
-  static const lichHoc = '/sinhvien/lichhoc';
-  static const checkInQR = '/attendance/check-in/qr';
-  static const checkInFace = '/attendance/check-in/face';
+  // ================== GIẢNG VIÊN ==================
+  static const String gvLichDay = '$baseUrl/giangvien/lichday';
+  static const String gvLopHocPhan = '$baseUrl/giangvien/lophocphan';
+  static const String gvDiemDanh = '$baseUrl/giangvien/diemdanh';
+  static const String gvGenerateQR = '$baseUrl/giangvien/buoihoc'; // + /{maBuoi}/qr
+  static const String gvCloseQR = '$baseUrl/giangvien/buoihoc';    // + /{maBuoi}/close
+
+  // ================== SINH VIÊN ==================
+  static const String svLichHoc = '$baseUrl/sinhvien/lichhoc';
+  static const String svDiemDanh = '$baseUrl/sinhvien/diemdanh';
+  static const String svCheckInQR = '$baseUrl/sinhvien/attendance/check-in/qr';
+  static const String svCheckInFace = '$baseUrl/sinhvien/attendance/check-in/face';
+  static const String svKhuonMat = '$baseUrl/sinhvien/khuonmat';
+
+  // ================== TEST & DEBUG ==================
+  static const String test = '$baseUrl/test';
 }

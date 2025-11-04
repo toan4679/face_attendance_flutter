@@ -5,12 +5,14 @@ import 'package:face_attendance_flutter/features/admin/presentation/screens/admi
 import 'package:face_attendance_flutter/features/phong_daotao/presentation/screens/pdt_dashboard_screen.dart';
 import 'package:face_attendance_flutter/features/giangvien/presentation/screens/giangvien_dashboard_screen.dart';
 import 'package:face_attendance_flutter/features/sinhvien/presentation/screens/sinhvien_dashboard_screen.dart';
+import '../features/phong_daotao/presentation/screens/manage_monhoc_screen.dart';
 
-Map<String, WidgetBuilder> appRoutes = {
+final Map<String, WidgetBuilder> appRoutes = {
   '/login': (_) => const LoginScreen(),
   '/register': (_) => const RegisterScreen(),
   '/admin_dashboard': (_) => const AdminDashboardScreen(),
-  '/pdt_dashboard': (_) => const PDTDashboardScreen(),
+  '/pdt_dashboard': (_) => const PdtDashboardScreen(),
   '/giangvien_dashboard': (_) => const GiangVienDashboardScreen(),
   '/sinhvien_dashboard': (_) => const SinhVienDashboardScreen(),
+  '/pdt/monhoc': (context) => const ManageMonHocScreen(),
 };
