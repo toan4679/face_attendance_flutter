@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  static const Color primaryColor = Colors.deepPurpleAccent;
   static final ThemeData lightTheme = ThemeData(
     primarySwatch: Colors.deepPurple,
     elevatedButtonTheme: ElevatedButtonThemeData(

@@ -19,6 +19,7 @@ class ApiEndpoints {
   static const String pdtBoMon = '$baseUrl/pdt/bomon';
   static const String pdtNganh = '$baseUrl/pdt/nganh';
   static const String pdtMonHoc = '$baseUrl/pdt/monhoc';
+  static const String pdtLop = '$baseUrl/pdt/lop';
   static const String pdtGiangVien = '$baseUrl/pdt/giangvien';
   static const String pdtSinhVien = '$baseUrl/pdt/sinhvien';
   static const String pdtLopHocPhan = '$baseUrl/pdt/lophocphan';

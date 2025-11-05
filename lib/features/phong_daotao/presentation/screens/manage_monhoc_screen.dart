@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../data/repositories/nganh_repository.dart';
 import '../controllers/mon_hoc_controller.dart';
-import '../widgets/monhoc_table.dart';
-import '../widgets/monhoc_form_dialog.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../data/models/mon_hoc_model.dart';
+import '../../data/models/nganh_model.dart';
+import '../widgets/monhoc_form_dialog.dart';
+import '../widgets/monhoc_table.dart';
 
 class ManageMonHocScreen extends StatefulWidget {
   const ManageMonHocScreen({super.key});
@@ -15,13 +17,29 @@ class ManageMonHocScreen extends StatefulWidget {
 
 class _ManageMonHocScreenState extends State<ManageMonHocScreen> {
   String searchText = '';
-  int? filterTinChi;
   int? filterNganh;
+  bool isLoadingNganh = true;
+  List<NganhModel> danhSachNganh = [];
 
   @override
   void initState() {
     super.initState();
-    context.read<MonHocController>().fetchMonHoc();
+    _fetchAllData();
+  }
+
+  Future<void> _fetchAllData() async {
+    final controller = context.read<MonHocController>();
+    setState(() => isLoadingNganh = true);
+
+    await controller.fetchMonHoc();
+    try {
+      danhSachNganh = await NganhRepository().getAll();
+      debugPrint("✅ Đã tải ${danhSachNganh.length} ngành học");
+    } catch (e) {
+      debugPrint("❌ Lỗi load ngành: $e");
+    } finally {
+      setState(() => isLoadingNganh = false);
+    }
   }
 
   @override
@@ -33,17 +51,18 @@ class _ManageMonHocScreenState extends State<ManageMonHocScreen> {
         title: const Text('Quản lý Môn học'),
         backgroundColor: Colors.deepPurpleAccent,
       ),
-      body: controller.isLoading
-          ? const Center(child: CircularProgressIndicator())
+      body: controller.isLoading || isLoadingNganh
+          ? const Center(child: LoadingIndicator())
           : Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thanh tìm kiếm + nút thêm
+            // ==================== THANH TÌM KIẾM + BỘ LỌC ====================
             Row(
               children: [
                 Expanded(
+                  flex: 2,
                   child: TextField(
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.search),
@@ -52,6 +71,29 @@ class _ManageMonHocScreenState extends State<ManageMonHocScreen> {
                     ),
                     onChanged: (value) =>
                         setState(() => searchText = value),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 1,
+                  child: DropdownButtonFormField<int>(
+                    value: filterNganh,
+                    decoration: const InputDecoration(
+                      labelText: "Lọc theo ngành",
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<int>(
+                        value: null,
+                        child: Text("Tất cả ngành"),
+                      ),
+                      ...danhSachNganh.map((n) => DropdownMenuItem<int>(
+                        value: n.maNganh,
+                        child: Text(n.tenNganh),
+                      )),
+                    ],
+                    onChanged: (val) =>
+                        setState(() => filterNganh = val),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -65,15 +107,18 @@ class _ManageMonHocScreenState extends State<ManageMonHocScreen> {
                     );
                     if (success == true) {
                       await controller.fetchMonHoc();
-                      _showDialog(context, 'Thêm môn học thành công!');
+                      _showDialog(context, '✅ Thêm môn học thành công!');
                     }
                   },
-                )
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurpleAccent,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
 
-            // Bảng dữ liệu có thể cuộn và tràn chiều rộng
+            // ==================== BẢNG DỮ LIỆU CUỘN NGANG + DỌC ====================
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.vertical,
@@ -83,16 +128,15 @@ class _ManageMonHocScreenState extends State<ManageMonHocScreen> {
                     constraints: BoxConstraints(
                         minWidth: MediaQuery.of(context).size.width),
                     child: MonHocTable(
-                      monHocs: controller.search(searchText),
+                      monHocs: _filteredList(controller),
                       onEdit: (monHoc) async {
                         final success = await showDialog(
                           context: context,
-                          builder: (_) =>
-                              MonHocFormDialog(monHoc: monHoc),
+                          builder: (_) => MonHocFormDialog(monHoc: monHoc),
                         );
                         if (success == true) {
-                          _showDialog(
-                              context, 'Cập nhật môn học thành công!');
+                          await controller.fetchMonHoc();
+                          _showDialog(context, '✏️ Cập nhật thành công!');
                         }
                       },
                       onDelete: (monHoc) async {
@@ -111,6 +155,8 @@ class _ManageMonHocScreenState extends State<ManageMonHocScreen> {
                               ElevatedButton(
                                 onPressed: () =>
                                     Navigator.of(context).pop(true),
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.redAccent),
                                 child: const Text('Xóa'),
                               ),
                             ],
@@ -118,8 +164,7 @@ class _ManageMonHocScreenState extends State<ManageMonHocScreen> {
                         );
                         if (confirm == true) {
                           await controller.deleteMonHoc(monHoc.maMon);
-                          _showDialog(
-                              context, 'Xóa môn học thành công!');
+                          _showDialog(context, '🗑️ Xóa thành công!');
                         }
                       },
                     ),
@@ -131,6 +176,15 @@ class _ManageMonHocScreenState extends State<ManageMonHocScreen> {
         ),
       ),
     );
+  }
+
+  /// 📊 Kết hợp tìm kiếm + lọc ngành
+  List<MonHocModel> _filteredList(MonHocController controller) {
+    var list = controller.search(searchText);
+    if (filterNganh != null) {
+      list = list.where((m) => m.maNganh == filterNganh).toList();
+    }
+    return list;
   }
 
   void _showDialog(BuildContext context, String msg) {

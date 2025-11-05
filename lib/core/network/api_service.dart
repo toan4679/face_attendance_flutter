@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = "http://104.145.210.69/api"; // ⚙️ VPS Laravel backend URL
+  static const String baseUrl = "http://104.145.210.69/api/v1";
   final Dio _dio = Dio();
 
   ApiService() {
@@ -15,10 +15,10 @@ class ApiService {
       ..headers = {'Accept': 'application/json'};
   }
 
-  /// 🧩 Lấy token đã lưu (sau khi login)
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
+    // Hỗ trợ cả hai key để tránh mất session cũ
+    return prefs.getString('auth_token') ?? prefs.getString('token');
   }
 
   /// 🧾 GET
@@ -27,9 +27,7 @@ class ApiService {
       final token = await _getToken();
       final response = await _dio.get(
         endpoint,
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
       return response.data;
     } on DioException catch (e) {
@@ -37,17 +35,20 @@ class ApiService {
     }
   }
 
-  /// ➕ POST
-  Future<dynamic> post(String endpoint, Map<String, dynamic> data) async {
+  /// ➕ POST — hỗ trợ cả JSON và FormData
+  Future<dynamic> post(String endpoint, dynamic data) async {
     try {
       final token = await _getToken();
+      final isFormData = data is FormData;
+
       final response = await _dio.post(
         endpoint,
-        data: jsonEncode(data),
+        data: isFormData ? data : jsonEncode(data),
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
+            'Content-Type':
+            isFormData ? 'multipart/form-data' : 'application/json',
           },
         ),
       );
@@ -58,7 +59,7 @@ class ApiService {
   }
 
   /// ✏️ PUT
-  Future<dynamic> put(String endpoint, Map<String, dynamic> data) async {
+  Future<dynamic> put(String endpoint, dynamic data) async {
     try {
       final token = await _getToken();
       final response = await _dio.put(
@@ -91,10 +92,8 @@ class ApiService {
     }
   }
 
-  /// ⚠️ Xử lý lỗi Dio
   void _handleError(DioException e) {
     String message = "Lỗi không xác định";
-
     if (e.response != null) {
       final data = e.response?.data;
       if (data is Map && data.containsKey('message')) {
@@ -109,7 +108,6 @@ class ApiService {
     } else {
       message = "⚠️ ${e.message}";
     }
-
     debugPrint('❌ API Error: $message');
     throw Exception(message);
   }

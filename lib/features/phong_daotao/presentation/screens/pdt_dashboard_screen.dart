@@ -6,6 +6,8 @@ import '../../data/models/lop_hoc_phan_model.dart';
 import '../widgets/pdt_dashboard_card.dart';
 import 'package:face_attendance_flutter/features/phong_daotao/presentation/screens/manage_nganh_screen.dart';
 
+import 'manage_lophocphan_screen.dart';
+
 
 
 class PdtDashboardScreen extends StatefulWidget {
@@ -97,12 +99,24 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
               },
             ),
             _buildDrawerItem(
+              icon: Icons.school,
+              title: 'Quản lý Khoa',
+              isActive: currentPage == 'Khoa',
+              onTap: () {
+                setState(() => currentPage = 'Khoa');
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/pdt/khoa');
+              },
+            ),
+
+
+            _buildDrawerItem(
               icon: Icons.category,
               title: 'Quản lý Ngành',
               isActive: currentPage == 'Ngành',
               onTap: () {
                 setState(() => currentPage = 'Ngành');
-                Navigator.pop(context); // đóng Drawer trước
+                Navigator.pop(context);
                 controller.gotoNganh(context);
               },
             ),
@@ -127,15 +141,16 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
               },
             ),
             _buildDrawerItem(
-              icon: Icons.school,
+              icon: Icons.meeting_room,
               title: 'Quản lý Lớp học phần',
               isActive: currentPage == 'Lớp học phần',
               onTap: () {
                 setState(() => currentPage = 'Lớp học phần');
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/pdt/lophocphan');
+                Navigator.pushNamed(context, '/pdt/lophocphan'); // ✅ sử dụng route name chuẩn
               },
             ),
+
             _buildDrawerItem(
               icon: Icons.event_note,
               title: 'Quản lý Buổi học',
@@ -143,19 +158,20 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
               onTap: () {
                 setState(() => currentPage = 'Buổi học');
                 Navigator.pop(context);
-                controller.gotoBuoiHoc(context);
+                Navigator.pushNamed(context, '/pdt/buoihoc'); // ✅ route mới
               },
             ),
             _buildDrawerItem(
               icon: Icons.schedule,
-              title: 'Gán lịch giảng dạy',
+              title: 'Gán lịch dạy',
               isActive: currentPage == 'Gán lịch',
               onTap: () {
                 setState(() => currentPage = 'Gán lịch');
                 Navigator.pop(context);
-                controller.gotoGanLich(context);
+                Navigator.pushNamed(context, '/pdt/assign_schedule');
               },
             ),
+
             _buildDrawerItem(
               icon: Icons.people,
               title: 'Quản lý Sinh viên',
@@ -297,7 +313,6 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
                                 columns: const [
                                   DataColumn(label: Text('Mã lớp HP')),
                                   DataColumn(label: Text('Môn học')),
-                                  DataColumn(label: Text('Giảng viên')),
                                   DataColumn(label: Text('Ngày bắt đầu')),
                                   DataColumn(label: Text('Ngày kết thúc')),
                                   DataColumn(label: Text('Học kỳ')),
@@ -307,7 +322,6 @@ class _PdtDashboardScreenState extends State<PdtDashboardScreen> {
                                   return DataRow(cells: [
                                     DataCell(Text(lop.maSoLopHP)),
                                     DataCell(Text(lop.tenMon ?? '—')),
-                                    DataCell(Text(lop.tenGiangVien ?? '—')),
                                     DataCell(Text(lop.ngayBatDau ?? '—')),
                                     DataCell(Text(lop.ngayKetThuc ?? '—')),
                                     DataCell(Text(lop.hocKy)),

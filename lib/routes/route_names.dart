@@ -5,4 +5,5 @@ class RouteNames {
   static const pdtDashboard = '/pdt_dashboard';
   static const giangvienDashboard = '/giangvien_dashboard';
   static const sinhvienDashboard = '/sinhvien_dashboard';
+  static const pdtBuoiHoc = '/pdt/buoihoc';
 }

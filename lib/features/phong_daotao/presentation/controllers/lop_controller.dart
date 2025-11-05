@@ -1,45 +1,87 @@
 import 'package:flutter/material.dart';
 import '../../data/models/lop_model.dart';
+import '../../data/models/nganh_model.dart';
+import '../../data/models/sinhvien_model.dart';
 import '../../data/repositories/lop_repository.dart';
+import '../../data/repositories/nganh_repository.dart';
 
 
 class LopController extends ChangeNotifier {
   final LopRepository _repo = LopRepository();
-  List<LopModel> _lops = [];
-  bool _isLoading = false;
+  final NganhRepository _nganhRepo = NganhRepository();
 
-  List<LopModel> get lops => _lops;
-  bool get isLoading => _isLoading;
+  bool isLoading = false;
+  List<LopModel> danhSachLop = [];
+  List<LopModel> filteredLop = [];
 
-  Future<void> fetchLop() async {
-    _isLoading = true;
+  // ===== Fetch lớp =====
+  Future<void> fetchAll() async {
+    try {
+      isLoading = true;
+      notifyListeners();
+      danhSachLop = await _repo.getAll();
+      filteredLop = danhSachLop;
+      debugPrint('✅ Lấy ${danhSachLop.length} lớp học thành công');
+    } catch (e) {
+      debugPrint('❌ [Controller] fetchAll lỗi: $e');
+      rethrow;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ===== Tìm kiếm =====
+  void updateSearch(String keyword) {
+    keyword = keyword.toLowerCase();
+    filteredLop = danhSachLop.where((lop) {
+      return lop.tenLop.toLowerCase().contains(keyword) ||
+          lop.tenNganh.toLowerCase().contains(keyword);
+    }).toList();
     notifyListeners();
-    _lops = await _repo.fetchLop();
-    _isLoading = false;
-    notifyListeners();
   }
 
-  List<LopModel> search(String text) {
-    if (text.isEmpty) return _lops;
-    return _lops
-        .where((l) =>
-    l.tenLop.toLowerCase().contains(text.toLowerCase()) ||
-        l.maLop.toLowerCase().contains(text.toLowerCase()))
-        .toList();
+  // ===== Dropdown ngành =====
+  Future<List<NganhModel>> fetchDanhSachNganh() async {
+    try {
+      final list = await _nganhRepo.getAll();
+      debugPrint('✅ [Controller] dsNganh=${list.length}');
+      return list;
+    } catch (e) {
+      debugPrint('❌ [Controller] fetchDanhSachNganh lỗi: $e');
+      return [];
+    }
   }
 
-  Future<void> addLop(LopModel lop) async {
-    await _repo.addLop(lop);
-    await fetchLop();
+  // ===== CRUD lớp =====
+  Future<void> addLop(Map<String, dynamic> data) async {
+    debugPrint('🟢 [Controller] addLop payload: $data');
+    await _repo.create(data);
+    await fetchAll();
   }
 
-  Future<void> updateLop(LopModel lop) async {
-    await _repo.updateLop(lop);
-    await fetchLop();
+  Future<void> updateLop(int id, Map<String, dynamic> data) async {
+    debugPrint('🟠 [Controller] updateLop#$id payload: $data');
+    await _repo.update(id, data);
+    await fetchAll();
   }
 
-  Future<void> deleteLop(String maLop) async {
-    await _repo.deleteLop(maLop);
-    await fetchLop();
+  Future<void> deleteLop(int id) async {
+    debugPrint('🔴 [Controller] deleteLop#$id');
+    await _repo.delete(id);
+    await fetchAll();
+  }
+
+  // ===== Sinh viên theo lớp =====
+  Future<List<SinhVienModel>> getSinhVienByLop(int maLop) async {
+    final list = await _repo.getSinhVienByLop(maLop);
+    debugPrint('👥 [Controller] Lớp#$maLop có ${list.length} sinh viên');
+    return list;
+  }
+
+  // ===== Import Excel =====
+  Future<void> importSinhVienExcel(int maLop, dynamic fileInput) async {
+    debugPrint('📤 [Controller] Import Excel lớp#$maLop, type=${fileInput.runtimeType}');
+    await _repo.importSinhVienExcel(maLop, fileInput);
   }
 }

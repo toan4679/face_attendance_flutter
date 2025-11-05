@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:face_attendance_flutter/core/network/api_constants.dart';
 import 'package:face_attendance_flutter/core/network/token_storage.dart';
 import '../../data/models/lop_hoc_phan_model.dart';
+import '../screens/manage_lophocphan_screen.dart';
 import '../screens/manage_monhoc_screen.dart';
 import '../screens/manage_lop_screen.dart';
 
@@ -51,8 +52,9 @@ class PdtDashboardController extends ChangeNotifier {
   void gotoLop(BuildContext context) =>
       Navigator.pushNamed(context, '/pdt/lop');
 
-  void gotoLopHocPhan(BuildContext context) =>
-      Navigator.pushNamed(context, '/pdt/lophocphan');
+  void gotoLopHocPhan(BuildContext context) {
+    Navigator.pushNamed(context, '/pdt/lophocphan');
+  }
 
   void gotoBuoiHoc(BuildContext context) =>
       Navigator.pushNamed(context, '/pdt/buoihoc');
