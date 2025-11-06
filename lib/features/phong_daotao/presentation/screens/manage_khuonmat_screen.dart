@@ -1,9 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controllers/khuonmat_controller.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ManageKhuonMatScreen extends StatelessWidget {
   const ManageKhuonMatScreen({super.key});
+
+  Future<void> _openImageUrl(BuildContext context, String url) async {
+    if (url.isEmpty || url == 'null') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sinh viên này chưa có ảnh để xem.')),
+      );
+      return;
+    }
+
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể mở ảnh tại: $url')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,46 +121,70 @@ class ManageKhuonMatScreen extends StatelessWidget {
                           columns: const [
                             DataColumn(label: Text('Mã SV')),
                             DataColumn(label: Text('Họ tên')),
-                            DataColumn(label: Text('Ảnh')),
+                            DataColumn(label: Text('Trạng thái ảnh')),
                             DataColumn(label: Text('Thao tác')),
                           ],
                           rows: c.sinhVienList.map((sv) {
                             final photoUrl = sv['duongDanAnh'] ?? '';
-                            debugPrint("🖼 Hiển thị ảnh: $photoUrl");
-
                             final hasPhoto =
                                 photoUrl.isNotEmpty && photoUrl != 'null';
+
+                            final statusText =
+                            hasPhoto ? "✅ Đã cập nhật" : "⚪ Chưa cập nhật";
+                            final statusColor =
+                            hasPhoto ? Colors.green : Colors.orange;
 
                             return DataRow(cells: [
                               DataCell(Text(sv['maSo'] ?? '—')),
                               DataCell(Text(sv['hoTen'] ?? '—')),
                               DataCell(
-                                hasPhoto
-                                    ? ClipOval(
-                                  child: Image.network(
-                                    photoUrl,
-                                    width: 48,
-                                    height: 48,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                    const Icon(Icons.error,
-                                        size: 40, color: Colors.redAccent),
-                                  ),
-                                )
-                                    : const Icon(Icons.account_circle,
-                                    size: 40, color: Colors.grey),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      hasPhoto
+                                          ? Icons.check_circle
+                                          : Icons.info_outline,
+                                      color: statusColor,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(statusText,
+                                        style: TextStyle(color: statusColor)),
+                                  ],
+                                ),
                               ),
                               DataCell(
-                                ElevatedButton.icon(
-                                  onPressed: () =>
-                                      c.updatePhoto(context, sv['maSV']),
-                                  icon: const Icon(Icons.camera_alt,
-                                      size: 18, color: Colors.white),
-                                  label: const Text('Cập nhật',
-                                      style: TextStyle(color: Colors.white)),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.deepPurpleAccent,
-                                  ),
+                                Row(
+                                  children: [
+                                    ElevatedButton.icon(
+                                      onPressed: () =>
+                                          c.updatePhoto(context, sv['maSV']),
+                                      icon: const Icon(Icons.camera_alt,
+                                          size: 18, color: Colors.white),
+                                      label: const Text('Cập nhật',
+                                          style: TextStyle(color: Colors.white)),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                        Colors.deepPurpleAccent,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 8),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    OutlinedButton.icon(
+                                      onPressed: () => _openImageUrl(
+                                          context, photoUrl.toString()),
+                                      icon: const Icon(Icons.visibility,
+                                          size: 18, color: Colors.deepPurple),
+                                      label: const Text('Xem ảnh',
+                                          style: TextStyle(
+                                              color: Colors.deepPurple)),
+                                      style: OutlinedButton.styleFrom(
+                                        side: const BorderSide(
+                                            color: Colors.deepPurpleAccent),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ]);

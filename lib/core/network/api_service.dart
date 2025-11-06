@@ -112,4 +112,30 @@ class ApiService {
     debugPrint('❌ API Error: $message');
     throw Exception(message);
   }
+
+  Future<dynamic> upload(String endpoint, FormData formData) async {
+    try {
+      final token = await _getToken();
+
+      debugPrint("📤 Upload API URL: $endpoint");
+      debugPrint("📦 Form fields: ${formData.fields}");
+      debugPrint("📸 File parts: ${formData.files.map((f) => f.key).toList()}");
+
+      final response = await _dio.post(
+        endpoint,
+        data: formData,
+        options: Options(headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        }),
+      );
+
+      debugPrint("✅ Upload thành công (${response.statusCode}): ${response.data}");
+      return response.data;
+    } on DioException catch (e) {
+      debugPrint("❌ Upload thất bại: ${e.message}");
+      _handleError(e);
+    }
+  }
+
 }

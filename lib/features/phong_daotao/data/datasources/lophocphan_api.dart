@@ -9,7 +9,6 @@ class LopHocPhanApi {
     try {
       print('[DEBUG] 📡 Fetching all lớp học phần...');
       final res = await _client.get('/v1/pdt/lophocphan');
-      print('[DEBUG] ✅ Received ${res.data.runtimeType}: ${res.data}');
       return res;
     } catch (e) {
       print('[ERROR] ❌ getAll() failed: $e');
@@ -26,25 +25,17 @@ class LopHocPhanApi {
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      print('[DEBUG] ✅ Created: ${res.data}');
       return res;
     } catch (e) {
-      if (e is DioException) {
-        print('[ERROR] ❌ create() failed: ${e.response?.statusCode} - ${e.response?.data}');
-      } else {
-        print('[ERROR] ❌ create() failed: $e');
-      }
+      print('[ERROR] ❌ create() failed: $e');
       rethrow;
     }
   }
 
-
   // 🔹 PATCH cập nhật lớp học phần
   Future<Response> update(int id, Map<String, dynamic> data) async {
     try {
-      print('[DEBUG] 🛠 Updating lớp học phần $id with: $data');
       final res = await _client.patch('/v1/pdt/lophocphan/$id', data: data);
-      print('[DEBUG] ✅ Updated lớp học phần: ${res.data}');
       return res;
     } catch (e) {
       print('[ERROR] ❌ update() failed: $e');
@@ -55,12 +46,47 @@ class LopHocPhanApi {
   // 🔹 DELETE xóa lớp học phần
   Future<Response> delete(int id) async {
     try {
-      print('[DEBUG] 🗑 Deleting lớp học phần $id...');
       final res = await _client.delete('/v1/pdt/lophocphan/$id');
-      print('[DEBUG] ✅ Deleted lớp học phần $id');
       return res;
     } catch (e) {
       print('[ERROR] ❌ delete() failed: $e');
+      rethrow;
+    }
+  }
+
+  // 🧩 GET sinh viên theo lớp học phần
+  Future<Response> getSinhVienByLopHocPhan(int id) async {
+    try {
+      final res = await _client.get('/v1/pdt/lophocphan/$id/sinhvien');
+      return res;
+    } catch (e) {
+      print('[ERROR] ❌ getSinhVienByLopHocPhan() failed: $e');
+      rethrow;
+    }
+  }
+
+  // 🧩 PATCH gán lớp hành chính vào lớp học phần
+  Future<Response> ganLopHanhChinh(int id, List<int> dsMaLop) async {
+    try {
+      final res = await _client.patch(
+        '/v1/pdt/lophocphan/$id/gan-lop',
+        data: {'dsMaLop': dsMaLop},
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      return res;
+    } catch (e) {
+      print('[ERROR] ❌ ganLopHanhChinh() failed: $e');
+      rethrow;
+    }
+  }
+
+  // 🧩 GET danh sách lớp hành chính
+  Future<Response> getDanhSachLopHanhChinh() async {
+    try {
+      final res = await _client.get('/v1/pdt/lop');
+      return res;
+    } catch (e) {
+      print('[ERROR] ❌ getDanhSachLopHanhChinh() failed: $e');
       rethrow;
     }
   }

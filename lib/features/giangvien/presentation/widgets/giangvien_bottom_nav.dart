@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../screens/diemdanh_qr_screen.dart';
+import '../../presentation/controllers/giangvien_controller.dart';
+import '../../data/models/giangvien_model.dart';
 import '../screens/giangvien_dashboard_screen.dart';
 import '../screens/diemdanh_screen.dart';
 import '../screens/lichday_screen.dart';
@@ -23,32 +24,31 @@ class GiangVienBottomNav extends StatefulWidget {
 
 class _GiangVienBottomNavState extends State<GiangVienBottomNav> {
   void _handleTap(int index) {
-    // Nếu có callback truyền từ bên ngoài → gọi lại
     widget.onTap?.call(index);
 
-    // Điều hướng đến trang tương ứng
+    final GiangVien? gv = GiangVienController().giangVien;
+
     Widget nextScreen;
     switch (index) {
       case 0:
-        nextScreen = const GiangVienDashboardScreen();
+        nextScreen = GiangVienDashboardScreen(giangVien: gv);
         break;
       case 1:
-        nextScreen = const LichDayScreen(giangVienId: 'GV001');
+        nextScreen = LichDayScreen(giangVien: gv);
         break;
       case 2:
         nextScreen = const DiemDanhScreen();
         break;
       case 3:
-        nextScreen = const QuanLyLopScreen(giangVienId: 'GV001');
+        nextScreen = QuanLyLopScreen(giangVien: gv);
         break;
       case 4:
-        nextScreen = const ProfileScreen(giangVienId: 'GV001');
+        nextScreen = const ProfileScreen();
         break;
       default:
-        nextScreen = const GiangVienDashboardScreen();
+        nextScreen = GiangVienDashboardScreen(giangVien: gv);
     }
 
-    // Chuyển trang mà không tạo chồng màn hình
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => nextScreen),

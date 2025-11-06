@@ -27,6 +27,7 @@ class ApiEndpoints {
   static const String pdtAssignSchedule = '$baseUrl/pdt/schedule/assign';
   static const String pdtThongBao = '$baseUrl/pdt/thongbao';
   static const String pdtKhuonMatPending = '$baseUrl/pdt/khuonmat/pending';
+  static const String pdtKhuonMatUpload = '$baseUrl/pdt/khuonmat/upload';
 
   // ================== GIẢNG VIÊN ==================
   static const String gvLichDay = '$baseUrl/giangvien/lichday';

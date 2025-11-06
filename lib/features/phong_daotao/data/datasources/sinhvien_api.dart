@@ -4,12 +4,11 @@ import 'package:http/http.dart' as http;
 import '../../../../core/network/token_storage.dart';
 import 'package:flutter/foundation.dart'; // cần cho kIsWeb
 
-
 class SinhVienApi {
-  // 🌐 Địa chỉ backend VPS của bạn
+  // 🌐 Địa chỉ backend VPS
   final String baseUrl = 'http://104.145.210.69/api/v1/pdt';
 
-  // 🧩 Tạo header có token
+  // 🧩 Header kèm token
   Future<Map<String, String>> _headers() async {
     final token = await TokenStorage.getToken();
     return {
@@ -18,59 +17,46 @@ class SinhVienApi {
     };
   }
 
-  // 🏫 Lấy danh sách khoa
+  // ======================== DANH MỤC ========================
+
   Future<List<dynamic>> getKhoaList() async {
     final res = await http.get(Uri.parse('$baseUrl/khoa'), headers: await _headers());
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
-      if (decoded is List) return decoded;
-      if (decoded is Map && decoded.containsKey('data')) return decoded['data'];
-      throw Exception('Phản hồi không hợp lệ: $decoded');
-    } else {
-      throw Exception('Lỗi tải danh sách Khoa: ${res.body}');
+      return decoded is List ? decoded : decoded['data'] ?? [];
     }
+    throw Exception('Lỗi tải danh sách Khoa: ${res.body}');
   }
 
-  // 📚 Lấy danh sách ngành theo mã Khoa
   Future<List<dynamic>> getNganhByKhoa(String maKhoa) async {
     final res = await http.get(Uri.parse('$baseUrl/nganh?maKhoa=$maKhoa'), headers: await _headers());
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
-      if (decoded is List) return decoded;
-      if (decoded is Map && decoded.containsKey('data')) return decoded['data'];
-      throw Exception('Phản hồi không hợp lệ: $decoded');
-    } else {
-      throw Exception('Lỗi tải danh sách Ngành: ${res.body}');
+      return decoded is List ? decoded : decoded['data'] ?? [];
     }
+    throw Exception('Lỗi tải danh sách Ngành: ${res.body}');
   }
 
-  // 👩‍🏫 Lấy danh sách lớp theo mã Ngành
   Future<List<dynamic>> getLopByNganh(String maNganh) async {
     final res = await http.get(Uri.parse('$baseUrl/lop?maNganh=$maNganh'), headers: await _headers());
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
-      if (decoded is List) return decoded;
-      if (decoded is Map && decoded.containsKey('data')) return decoded['data'];
-      throw Exception('Phản hồi không hợp lệ: $decoded');
-    } else {
-      throw Exception('Lỗi tải danh sách Lớp: ${res.body}');
+      return decoded is List ? decoded : decoded['data'] ?? [];
     }
+    throw Exception('Lỗi tải danh sách Lớp: ${res.body}');
   }
 
-  // 👨‍🎓 Lấy danh sách sinh viên theo lớp
   Future<List<dynamic>> getSinhVienByLop(String maLop) async {
     final res = await http.get(Uri.parse('$baseUrl/lop/$maLop/sinhvien'), headers: await _headers());
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
-      if (decoded is List) return decoded;
-      if (decoded is Map && decoded.containsKey('data')) return decoded['data'];
-      throw Exception('Phản hồi không hợp lệ: $decoded');
-    } else {
-      throw Exception('Lỗi tải danh sách Sinh viên: ${res.body}');
+      return decoded is List ? decoded : decoded['data'] ?? [];
     }
+    throw Exception('Lỗi tải danh sách Sinh viên: ${res.body}');
   }
 
-  // 📤 Import sinh viên từ file Excel
+  // ======================== IMPORT EXCEL ========================
+
   Future<void> importSinhVienExcel({
     required String maLop,
     required String fileName,
@@ -81,26 +67,40 @@ class SinhVienApi {
     final request = http.MultipartRequest('POST', uri)
       ..headers.addAll(await _headers());
 
-    // 🧩 Gửi file Excel (hỗ trợ Web + Mobile)
-    if (filePath != null && filePath.isNotEmpty) {
-      request.files.add(await http.MultipartFile.fromPath('file', filePath, filename: fileName));
-    } else if (bytes != null) {
-      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
-    } else {
-      throw Exception('Không có dữ liệu file Excel để upload.');
-    }
+    try {
+      if (kIsWeb) {
+        if (bytes == null) throw Exception('⚠️ Không có bytes để upload (web)');
+        debugPrint("🌐 Web upload file: $fileName (${bytes.lengthInBytes} bytes)");
+        request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
+      } else {
+        if (filePath != null && filePath.isNotEmpty) {
+          debugPrint("📱 Mobile upload từ path: $filePath");
+          request.files.add(await http.MultipartFile.fromPath('file', filePath, filename: fileName));
+        } else if (bytes != null) {
+          debugPrint("📱 Mobile upload từ bytes: $fileName");
+          request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
+        } else {
+          throw Exception('❌ Không có file hợp lệ để upload.');
+        }
+      }
 
-    final response = await request.send();
-    final body = await response.stream.bytesToString();
+      final response = await request.send();
+      final body = await response.stream.bytesToString();
+      debugPrint("📦 Import Excel response: $body");
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Import thất bại (${response.statusCode}): $body');
-    } else {
-      print('✅ Import Excel thành công: $body');
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('❌ Import thất bại (${response.statusCode}): $body');
+      } else {
+        debugPrint('✅ Import Excel thành công!');
+      }
+    } catch (e) {
+      debugPrint('💥 Lỗi import Excel: $e');
+      rethrow;
     }
   }
 
-  // 📸 Upload ảnh sinh viên (chạy cả Web & Mobile)
+  // ======================== UPLOAD ẢNH SINH VIÊN ========================
+
   Future<void> uploadFacePhoto({
     required int maSV,
     required String fileName,
@@ -114,31 +114,33 @@ class SinhVienApi {
 
     try {
       if (kIsWeb) {
-        // 🌐 Flutter Web: chỉ hỗ trợ bytes
-        if (bytes == null) throw Exception('Không có bytes ảnh để upload (web)');
+        if (bytes == null) throw Exception('⚠️ Không có bytes ảnh để upload (web)');
+        debugPrint("🌐 Web upload ảnh: $fileName (${bytes.lengthInBytes} bytes)");
         request.files.add(http.MultipartFile.fromBytes('photo', bytes, filename: fileName));
       } else {
-        // 📱 Mobile / Desktop: có thể dùng path
         if (filePath != null && filePath.isNotEmpty) {
+          debugPrint("📱 Mobile upload ảnh từ path: $filePath");
           request.files.add(await http.MultipartFile.fromPath('photo', filePath, filename: fileName));
         } else if (bytes != null) {
+          debugPrint("📱 Mobile upload ảnh từ bytes: $fileName");
           request.files.add(http.MultipartFile.fromBytes('photo', bytes, filename: fileName));
         } else {
-          throw Exception('Không có file hợp lệ để upload');
+          throw Exception('❌ Không có ảnh hợp lệ để upload');
         }
       }
+
+      final response = await request.send();
+      final body = await response.stream.bytesToString();
+      debugPrint("📤 Upload Face response: $body");
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('❌ Upload ảnh thất bại (${response.statusCode}): $body');
+      } else {
+        debugPrint('✅ Upload ảnh khuôn mặt thành công!');
+      }
     } catch (e) {
-      throw Exception('Lỗi xử lý file upload: $e');
-    }
-
-    final response = await request.send();
-    final body = await response.stream.bytesToString();
-
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Upload ảnh thất bại (${response.statusCode}): $body');
-    } else {
-      print('✅ Upload ảnh khuôn mặt thành công: $body');
+      debugPrint('💥 Lỗi upload ảnh khuôn mặt: $e');
+      rethrow;
     }
   }
-
 }

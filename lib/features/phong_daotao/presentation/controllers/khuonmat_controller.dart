@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../data/repositories/sinhvien_repository.dart';
 import '../../data/datasources/sinhvien_api.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'dart:typed_data';
 
 class KhuonMatController extends ChangeNotifier {
   final repo = SinhVienRepository(api: SinhVienApi());

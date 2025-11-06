@@ -8,25 +8,45 @@ import 'presentation/screens/profile_screen.dart';
 import 'presentation/screens/thongke_screen.dart';
 import 'presentation/screens/doi_mat_khau_screen.dart';
 import 'data/models/buoihoc_model.dart';
-
+import 'presentation/controllers/giangvien_controller.dart';
+import 'data/models/giangvien_model.dart';
 class GvRoutes {
   static const String dashboard = '/giangvien/dashboard';
   static const String diemdanh = '/giangvien/diemdanh';
   static const String diemdanhQR = '/giangvien/diemdanh_qr';
   static const String lichday = '/giangvien/lichday';
   static const String quanlylop = '/giangvien/quanlylop';
+  static const String thongTinLop = '/giangvien/thongtinlop';
   static const String profile = '/giangvien/profile';
   static const String thongke = '/giangvien/thongke';
   static const String doiMatKhau = '/giangvien/doi_mat_khau';
 
   static Map<String, WidgetBuilder> staticRoutes = {
-    dashboard: (_) => const GiangVienDashboardScreen(),
-    diemdanh: (_) => const DiemDanhScreen(),
-    lichday: (_) => const LichDayScreen(giangVienId: 'GV001'),
-    quanlylop: (_) => const QuanLyLopScreen(giangVienId: 'GV001'),
-    profile: (_) => const ProfileScreen(giangVienId: 'GV001'),
-    thongke: (_) => const ThongKeScreen(giangVienId: 'GV001'),
-    doiMatKhau: (_) => const DoiMatKhauScreen(giangVienId: 'GV001'),
+    dashboard: (_) {
+      final gv = GiangVienController().giangVien;
+      return GiangVienDashboardScreen(giangVien: gv);
+    },
+    diemdanh: (_) {
+      final gv = GiangVienController().giangVien;
+      return DiemDanhScreen();
+    },
+    lichday: (_) {
+      final gv = GiangVienController().giangVien;
+      return LichDayScreen(giangVien: gv);
+    },
+    quanlylop: (_) {
+      final gv = GiangVienController().giangVien;
+      return QuanLyLopScreen(giangVien: gv);
+    },
+    profile: (_) => const ProfileScreen(),
+    thongke: (_) {
+      final gv = GiangVienController().giangVien;
+      return ThongKeScreen(giangVien: gv);
+    },
+    doiMatKhau: (_) {
+      final gv = GiangVienController().giangVien;
+      return DoiMatKhauScreen(giangVien: gv);
+    },
   };
 
   static void navigate(BuildContext context, String route,
@@ -52,7 +72,7 @@ class GvRoutes {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => DoiMatKhauScreen(giangVienId: giangVienId),
+            builder: (_) => DoiMatKhauScreen(giangVien: giangVienId),
           ),
         );
       } else if (staticRoutes.containsKey(route)) {

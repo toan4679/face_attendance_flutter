@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import '../../data/models/buoihoc_model.dart';
 import '../../data/models/giangvien_model.dart';
 import '../../data/models/sinhvien_model.dart';
+import '../../data/models/lophocphan_model.dart';
+import '../controllers/giangvien_controller.dart';
 import '../widgets/giangvien_bottom_nav.dart';
 import 'chitiet_sv_diemdanh_screen.dart';
 
 class ThongTinLopScreen extends StatefulWidget {
-  final BuoiHoc lop; // nhận BuoiHoc từ màn hình trước
-
+  final LopHocPhan lop;
   const ThongTinLopScreen({super.key, required this.lop});
 
   @override
@@ -16,7 +17,7 @@ class ThongTinLopScreen extends StatefulWidget {
 
 class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
   int _selectedIndex = 3;
-  String _searchQuery = ''; // Từ khóa tìm kiếm
+  String _searchQuery = '';
 
   void _onItemTapped(int index) {
     setState(() {
@@ -24,42 +25,16 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
     });
   }
 
-  String getThuFromDate(DateTime? date) {
-    if (date == null) return "Chưa có";
-    switch (date.weekday) {
-      case 1:
-        return "2";
-      case 2:
-        return "3";
-      case 3:
-        return "4";
-      case 4:
-        return "5";
-      case 5:
-        return "6";
-      case 6:
-        return "7";
-      case 7:
-        return "CN";
-      default:
-        return "Chưa có";
-    }
-  }
-
-  // Tỉ lệ điểm danh từng sinh viên
-  double tiLeDiemDanhCuaSinhVien(SinhVien sv, BuoiHoc lop) {
-    if (lop.diemDanhHienTai == null || lop.diemDanhHienTai == 0) return 0;
-    return (sv.soBuoiDiemDanh / lop.diemDanhHienTai!).clamp(0.0, 1.0);
-  }
-
   @override
   Widget build(BuildContext context) {
     final lop = widget.lop;
+    final gv = GiangVienController().giangVien; // ✅ Lấy từ controller
     final sinhVienCuaLop = lop.danhSachSinhVien;
 
-    // --- Lọc danh sách sinh viên theo từ khóa ---
+    // --- Lọc danh sách sinh viên ---
     final sinhVienLoc = sinhVienCuaLop
-        .where((sv) => sv.ten.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where((sv) =>
+        sv.ten.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
 
     return Scaffold(
@@ -80,18 +55,6 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.white),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Chức năng thông báo đang được phát triển..."),
-                ),
-              );
-            },
-          ),
-        ],
       ),
 
       body: Container(
@@ -109,13 +72,10 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundImage: AssetImage(currentGV.avatarPath),
-                  ),
+                  const Icon(Icons.person_outline, size: 30, color: Colors.grey),
                   const SizedBox(width: 10),
                   Text(
-                    currentGV.ten,
+                    gv?.hoTen ?? "Giảng viên",
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -125,7 +85,7 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
               ),
             ),
 
-            // ===== BODY NỘI DUNG =====
+            // ===== BODY =====
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(14),
@@ -151,16 +111,14 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "${lop.tenMon} - ${lop.lop}",
+                            "${lop.monHoc.tenMon} - ${lop.maSoLopHP}",
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                              "Thứ: ${getThuFromDate(lop.ngay)} - Phòng: ${lop.phong ?? 'Chưa có'}"),
+                          Text("Phòng: ${lop.thongTinLichHoc ?? 'Chưa có'}"),
                           const SizedBox(height: 4),
-                          Text(
-                              "Số buổi đã điểm danh: ${lop.diemDanhHienTai ?? 0}"),
+                          Text("Số buổi đã điểm danh: ${lop.diemDanhHienTai ?? 0}"),
                           const SizedBox(height: 4),
                           Text("Số tiết: ${lop.tongSoBuoi ?? 0}"),
                         ],
@@ -180,12 +138,10 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
                         ),
                         ElevatedButton.icon(
                           onPressed: () {
-                            // ✅ Chưa làm gì - chỉ hiển thị thông báo
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  'Tính năng xuất Excel đang được phát triển...',
-                                ),
+                                    'Tính năng xuất Excel đang được phát triển...'),
                               ),
                             );
                           },
@@ -195,15 +151,13 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
                             style: TextStyle(fontSize: 13),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                            const Color(0xFF6FBF73), // ✅ Màu xanh nhạt hơn
+                            backgroundColor: const Color(0xFF6FBF73),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 8),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            elevation: 2,
                           ),
                         ),
                       ],
@@ -211,7 +165,7 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
 
                     const SizedBox(height: 8),
 
-                    // --- THANH TÌM KIẾM SINH VIÊN ---
+                    // --- THANH TÌM KIẾM ---
                     TextField(
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.search),
@@ -226,9 +180,7 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
                         ),
                       ),
                       onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
+                        setState(() => _searchQuery = value);
                       },
                     ),
 
@@ -236,95 +188,52 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
 
                     // --- DANH SÁCH SINH VIÊN ---
                     sinhVienLoc.isEmpty
-                        ? const Center(
-                        child: Text("Không tìm thấy sinh viên nào"))
+                        ? const Center(child: Text("Không tìm thấy sinh viên nào"))
                         : Column(
                       children: sinhVienLoc.map((sv) {
-                        double tiLe = tiLeDiemDanhCuaSinhVien(sv, lop);
-
-                        return InkWell(
-                          onTap: () {
-                            final buoiThucTe =
-                            BuoiHoc.buoiHocMau.firstWhere(
-                                  (b) =>
-                              b.tenMon == lop.tenMon &&
-                                  b.lop == lop.lop,
-                              orElse: () => BuoiHoc(
-                                tenMon: lop.tenMon,
-                                lop: lop.lop,
-                                phong: lop.phong,
-                                diemDanhHienTai: lop.diemDanhHienTai,
-                                tongSoBuoi: lop.tongSoBuoi,
-                                danhSachSinhVien: [],
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.15),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
-                            );
-
-                            final diemDanhSV =
-                                buoiThucTe.diemDanhChiTietCuaSV[sv.ma] ??
-                                    [];
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => BuoiDaDiemDanhScreen(
-                                  tenSinhVien: sv.ten,
-                                  maSinhVien: sv.ma,
-                                  avatarPath: sv.avatarOrDefault,
-                                  diemDanh: diemDanhSV,
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundImage:
+                                AssetImage(sv.avatarOrDefault),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      sv.ten,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14),
+                                    ),
+                                    Text(
+                                      "MSV: ${sv.ma}",
+                                      style: const TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 12),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            );
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.15),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 20,
-                                  backgroundImage:
-                                  AssetImage(sv.avatarOrDefault),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        sv.ten,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14),
-                                      ),
-                                      Text(
-                                        "MSV: ${sv.ma}",
-                                        style: const TextStyle(
-                                            color: Colors.black87,
-                                            fontSize: 12),
-                                      ),
-                                      Text(
-                                        "Tỉ lệ điểm danh: ${(tiLe * 100).toStringAsFixed(1)}%",
-                                        style: const TextStyle(
-                                            color: Colors.redAccent,
-                                            fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                            ],
                           ),
                         );
                       }).toList(),
