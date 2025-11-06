@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../data/models/lophocphan_model.dart';
+import '../../data/repositories/lophocphan_repository.dart';
+import '../../data/datasources/lophocphan_remote_datasource.dart';
+import '../../data/models/giangvien_model.dart';
 import '../widgets/giangvien_bottom_nav.dart';
 import '../widgets/gv_side_menu.dart';
-import '../../data/models/buoihoc_model.dart';
-import 'thongtinlop_screen.dart'; // import màn hình thông tin lớp
+import 'thongtinlop_screen.dart';
 
 class QuanLyLopScreen extends StatefulWidget {
-  const QuanLyLopScreen({super.key, required this.giangVienId});
+  final GiangVien? giangVien;
 
-  final String giangVienId;
+  const QuanLyLopScreen({super.key, this.giangVien});
 
   @override
   State<QuanLyLopScreen> createState() => _QuanLyLopScreenState();
@@ -17,63 +20,59 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
   final int _selectedIndex = 3;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String searchText = '';
+  bool loading = true;
+  List<LopHocPhan> dsLop = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final repo = LopHocPhanRepository(LopHocPhanRemoteDataSource());
+      final data = await repo.getLopHocPhan();
+      setState(() {
+        dsLop = data;
+        loading = false;
+      });
+    } catch (e) {
+      setState(() => loading = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Lỗi tải dữ liệu lớp: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Lọc danh sách lớp theo từ khóa tìm kiếm
-    final filteredClasses = BuoiHoc.buoiHocMau.where((buoi) {
-      return buoi.lop.toLowerCase().contains(searchText.toLowerCase()) ||
-          buoi.tenMon.toLowerCase().contains(searchText.toLowerCase());
+    final filtered = dsLop.where((lop) {
+      return lop.maSoLopHP.toLowerCase().contains(searchText.toLowerCase()) ||
+          lop.monHoc.tenMon.toLowerCase().contains(searchText.toLowerCase());
     }).toList();
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
       drawer: GVSideMenu(
-        giangVienId: widget.giangVienId,
+        giangVienId: widget.giangVien?.maGV.toString() ?? '',
         onClose: () => Navigator.pop(context),
       ),
       appBar: AppBar(
         backgroundColor: const Color(0xFF154B71),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Stack(
-          alignment: Alignment.center,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
-            ),
-            const Center(
-              child: Text(
-                "QUẢN LÝ LỚP HỌC",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: IconButton(
-                icon: const Icon(Icons.notifications, color: Colors.white),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Không có thông báo mới")),
-                  );
-                },
-              ),
-            ),
-          ],
+        title: const Text(
+          "QUẢN LÝ LỚP HỌC",
+          style: TextStyle(color: Colors.white),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
         children: [
-          // ===== Avatar + tên giáo viên =====
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -83,9 +82,9 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
                   backgroundImage: AssetImage('assets/images/teacher.jpg'),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  "GV. Nguyễn Văn A",
-                  style: TextStyle(
+                Text(
+                  widget.giangVien?.hoTen ?? "Đang tải...",
+                  style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87),
@@ -93,26 +92,27 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
               ],
             ),
           ),
-          // ===== Danh sách lớp =====
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
                 color: Color(0xFFF0F0F0),
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(45)),
+                borderRadius:
+                BorderRadius.only(topLeft: Radius.circular(45)),
               ),
               child: Column(
                 children: [
-                  // Thanh tìm kiếm
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 20),
                     child: Row(
                       children: [
                         const Expanded(
                           flex: 3,
                           child: Text(
-                            "Lớp học",
+                            "Lớp học phần",
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                         Expanded(
@@ -122,43 +122,39 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
                               hintText: "Tìm kiếm lớp...",
                               filled: true,
                               fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 0),
                               suffixIcon: const Icon(Icons.search),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
                             ),
-                            onChanged: (value) {
-                              setState(() {
-                                searchText = value;
-                              });
-                            },
+                            onChanged: (v) =>
+                                setState(() => searchText = v),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // List lớp
                   Expanded(
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: filteredClasses.length,
+                      padding:
+                      const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: filtered.length,
                       itemBuilder: (context, index) {
-                        final buoi = filteredClasses[index];
+                        final lop = filtered[index];
                         return GestureDetector(
                           onTap: () {
-                            // Điều hướng sang màn hình Thông tin lớp
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ThongTinLopScreen(lop: buoi),
+                                builder: (_) =>
+                                    ThongTinLopScreen(lop: lop),
                               ),
                             );
                           },
                           child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            margin:
+                            const EdgeInsets.symmetric(vertical: 8),
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -172,33 +168,37 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
                               ],
                             ),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  "${buoi.tenMon} - ${buoi.lop}",
+                                  "${lop.monHoc.tenMon} - ${lop.maSoLopHP}",
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold, fontSize: 15),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  "Phòng: ${buoi.phong}",
+                                  lop.thongTinLichHoc,
                                   style: const TextStyle(
-                                      fontSize: 13, color: Colors.black54),
+                                      fontSize: 13,
+                                      color: Colors.black54),
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      "Điểm danh: ${buoi.diemDanhHienTai ?? 0}/${buoi.tongSoBuoi ?? 0}",
-                                      style: const TextStyle(fontSize: 13),
+                                      "Điểm danh: ${lop.diemDanhHienTai}/${lop.tongSoBuoi}",
+                                      style:
+                                      const TextStyle(fontSize: 13),
                                     ),
                                     Text(
-                                      "${(buoi.tiLeDiemDanh * 100).toStringAsFixed(1)}%",
+                                      "${(lop.tiLeDiemDanh * 100).toStringAsFixed(1)}%",
                                       style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600),
                                     ),
                                   ],
                                 ),
@@ -206,7 +206,7 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: LinearProgressIndicator(
-                                    value: buoi.tiLeDiemDanh,
+                                    value: lop.tiLeDiemDanh,
                                     backgroundColor: Colors.grey[300],
                                     color: const Color(0xFF154B71),
                                     minHeight: 8,
@@ -225,9 +225,7 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: GiangVienBottomNav(
-        currentIndex: _selectedIndex,
-      ),
+      bottomNavigationBar: GiangVienBottomNav(currentIndex: _selectedIndex),
     );
   }
 }

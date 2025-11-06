@@ -7,11 +7,10 @@ import 'giangvien_dashboard_screen.dart';
 import 'diemdanh_qr_screen.dart';
 import 'lichday_screen.dart';
 import 'quanlylop_screen.dart';
-
+import '../../data/models/giangvien_model.dart';
 class ThongKeScreen extends StatefulWidget {
-  const ThongKeScreen({super.key, required this.giangVienId});
-
-  final String giangVienId;
+  final GiangVien? giangVien;
+  const ThongKeScreen({super.key, this.giangVien});
 
   @override
   State<ThongKeScreen> createState() => _ThongKeScreenState();
@@ -55,7 +54,7 @@ class _ThongKeScreenState extends State<ThongKeScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (_) => LichDayScreen(giangVienId: widget.giangVienId)),
+              builder: (_) => LichDayScreen(giangVien: widget.giangVien)),
         );
         break;
       case 2:
@@ -96,7 +95,7 @@ class _ThongKeScreenState extends State<ThongKeScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (_) => QuanLyLopScreen(giangVienId: widget.giangVienId)),
+              builder: (_) => QuanLyLopScreen(giangVien: widget.giangVien)),
         );
         break;
       case 4:
@@ -118,7 +117,7 @@ class _ThongKeScreenState extends State<ThongKeScreen> {
       key: _scaffoldKey,
       backgroundColor: const Color(0xFFF0F0F0),
       drawer: GVSideMenu(
-        giangVienId: widget.giangVienId,
+        giangVienId: widget.giangVien?.maGV.toString() ?? '',
         onClose: () => Navigator.pop(context),
       ),
       appBar: AppBar(

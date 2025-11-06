@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-
+import '../../data/models/giangvien_model.dart';
 class DoiMatKhauScreen extends StatelessWidget {
-  final String giangVienId;
-  const DoiMatKhauScreen({super.key, required this.giangVienId});
+  final GiangVien? giangVien;
+  const DoiMatKhauScreen({super.key, this.giangVien});
 
   @override
   Widget build(BuildContext context) {

@@ -3,7 +3,7 @@ import '../../data/models/buoihoc_model.dart';
 import '../../gv_routes.dart';
 import '../widgets/giangvien_bottom_nav.dart';
 import '../widgets/gv_side_menu.dart';
-
+import '../../data/models/giangvien_model.dart';
 // ===== Hàm helper hiển thị thứ =====
 String getThu(DateTime? ngay) {
   if (ngay == null) return "-";
@@ -28,9 +28,9 @@ String getThu(DateTime? ngay) {
 }
 
 class LichDayScreen extends StatefulWidget {
-  final String giangVienId;
+  final GiangVien? giangVien;
+  const LichDayScreen({super.key, this.giangVien});
 
-  const LichDayScreen({super.key, required this.giangVienId});
 
   @override
   State<LichDayScreen> createState() => _LichDayScreenState();
@@ -153,7 +153,7 @@ class _LichDayScreenState extends State<LichDayScreen> {
       key: _scaffoldKey,
       backgroundColor: Colors.white,
       drawer: GVSideMenu(
-        giangVienId: widget.giangVienId,
+        giangVienId: widget.giangVien?.maGV.toString() ?? '',
         onClose: () => Navigator.pop(context),
       ),
       appBar: AppBar(
