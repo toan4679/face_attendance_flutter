@@ -17,7 +17,6 @@ class ApiService {
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    // Hỗ trợ cả hai key để tránh mất session cũ
     return prefs.getString('auth_token') ?? prefs.getString('token');
   }
 
@@ -35,23 +34,25 @@ class ApiService {
     }
   }
 
-  /// ➕ POST — hỗ trợ cả JSON và FormData
+  /// ➕ POST — tự động phân biệt JSON và FormData
   Future<dynamic> post(String endpoint, dynamic data) async {
     try {
       final token = await _getToken();
-      final isFormData = data is FormData;
+
+      final bool isFormData = data is FormData;
 
       final response = await _dio.post(
         endpoint,
-        data: isFormData ? data : jsonEncode(data),
+        data: data, // ❗ Không jsonEncode nếu là FormData
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
-            'Content-Type':
-            isFormData ? 'multipart/form-data' : 'application/json',
+            // Laravel cần multipart boundary, Dio sẽ tự set nếu ta KHÔNG ép cứng content-type
+            if (!isFormData) 'Content-Type': 'application/json',
           },
         ),
       );
+
       return response.data;
     } on DioException catch (e) {
       _handleError(e);

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+// import 'package:qr_flutter/qr_flutter.dart';
 import '../widgets/giangvien_bottom_nav.dart';
 import '../../data/models/buoihoc_model.dart';
 import '../../data/models/sinhvien_model.dart';
@@ -14,9 +14,9 @@ class DiemDanhQRScreen extends StatefulWidget {
 }
 
 class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
-  bool diemDanhDangMo = false; // trạng thái điểm danh
-  bool hienThiDanhSach = false; // hiển thị danh sách sinh viên
-  bool showQR = true; // điều khiển QR hiển thị tạm thời
+  bool diemDanhDangMo = false;
+  bool hienThiDanhSach = false;
+  bool showQR = true;
 
   @override
   void initState() {
@@ -93,14 +93,14 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
                       ),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: QrImageView(
-                      data:
-                      "https://diemdanh.poly.edu.vn/qr/${monHoc.lop}_${monHoc.tenMon}",
-                      version: QrVersions.auto,
-                      size: 200,
-                      backgroundColor: Colors.white,
-                      gapless: true,
-                    ),
+                    // child: QrImageView(
+                    //   data:
+                    //   "https://diemdanh.poly.edu.vn/qr/${monHoc.lop}_${monHoc.tenMon}",
+                    //   version: QrVersions.auto,
+                    //   size: 200,
+                    //   backgroundColor: Colors.white,
+                    //   gapless: true,
+                    // ),
                   ),
                   const SizedBox(height: 12),
                   Text(

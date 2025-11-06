@@ -29,7 +29,6 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
     gvHienTai = currentGV;
     lichDayHomNay = BuoiHoc.buoiHocMau;
 
-    // Cập nhật trạng thái buổi học realtime
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -41,7 +40,6 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
     super.dispose();
   }
 
-  // --- Tách giờ bắt đầu/kết thúc từ chuỗi "07:00-08:30"
   List<DateTime> _parseTimeRange(String thoiGian, DateTime ngay) {
     try {
       final parts = thoiGian.split('-');

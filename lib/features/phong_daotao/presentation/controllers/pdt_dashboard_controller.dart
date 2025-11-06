@@ -62,6 +62,7 @@ class PdtDashboardController extends ChangeNotifier {
   void gotoGanLich(BuildContext context) =>
       Navigator.pushNamed(context, '/pdt/ganlich');
 
-  void gotoAnhSinhVien(BuildContext context) =>
-      Navigator.pushNamed(context, '/pdt/anh');
+  void gotoAnhSinhVien(BuildContext context) {
+    Navigator.pushNamed(context, '/pdt/khuonmat');
+  }
 }
