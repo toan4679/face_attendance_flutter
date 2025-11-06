@@ -2,10 +2,14 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../../../../core/network/token_storage.dart';
+import 'package:flutter/foundation.dart'; // cần cho kIsWeb
+
 
 class SinhVienApi {
+  // 🌐 Địa chỉ backend VPS của bạn
   final String baseUrl = 'http://104.145.210.69/api/v1/pdt';
 
+  // 🧩 Tạo header có token
   Future<Map<String, String>> _headers() async {
     final token = await TokenStorage.getToken();
     return {
@@ -66,46 +70,75 @@ class SinhVienApi {
     }
   }
 
-  // 📤 Import sinh viên từ Excel
+  // 📤 Import sinh viên từ file Excel
   Future<void> importSinhVienExcel({
     required String maLop,
     required String fileName,
     Uint8List? bytes,
     String? filePath,
   }) async {
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/lop/$maLop/import-sinhvien'),
-    )
-      ..headers.addAll(await _headers())
-      ..files.add(http.MultipartFile.fromBytes(
-        'file',
-        bytes!,
-        filename: fileName,
-      ));
+    final uri = Uri.parse('$baseUrl/lop/$maLop/import-sinhvien');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll(await _headers());
+
+    // 🧩 Gửi file Excel (hỗ trợ Web + Mobile)
+    if (filePath != null && filePath.isNotEmpty) {
+      request.files.add(await http.MultipartFile.fromPath('file', filePath, filename: fileName));
+    } else if (bytes != null) {
+      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
+    } else {
+      throw Exception('Không có dữ liệu file Excel để upload.');
+    }
+
     final response = await request.send();
+    final body = await response.stream.bytesToString();
+
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Import thất bại (${response.statusCode})');
+      throw Exception('Import thất bại (${response.statusCode}): $body');
+    } else {
+      print('✅ Import Excel thành công: $body');
     }
   }
 
-  // 📸 Upload ảnh sinh viên
+  // 📸 Upload ảnh sinh viên (chạy cả Web & Mobile)
   Future<void> uploadFacePhoto({
     required int maSV,
     required String fileName,
     Uint8List? bytes,
     String? filePath,
   }) async {
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/khuonmat/$maSV/approve'),
-    )
+    final uri = Uri.parse('$baseUrl/khuonmat/upload');
+    final request = http.MultipartRequest('POST', uri)
       ..headers.addAll(await _headers())
-      ..files.add(http.MultipartFile.fromBytes('photo', bytes!, filename: fileName));
+      ..fields['maSV'] = maSV.toString();
+
+    try {
+      if (kIsWeb) {
+        // 🌐 Flutter Web: chỉ hỗ trợ bytes
+        if (bytes == null) throw Exception('Không có bytes ảnh để upload (web)');
+        request.files.add(http.MultipartFile.fromBytes('photo', bytes, filename: fileName));
+      } else {
+        // 📱 Mobile / Desktop: có thể dùng path
+        if (filePath != null && filePath.isNotEmpty) {
+          request.files.add(await http.MultipartFile.fromPath('photo', filePath, filename: fileName));
+        } else if (bytes != null) {
+          request.files.add(http.MultipartFile.fromBytes('photo', bytes, filename: fileName));
+        } else {
+          throw Exception('Không có file hợp lệ để upload');
+        }
+      }
+    } catch (e) {
+      throw Exception('Lỗi xử lý file upload: $e');
+    }
 
     final response = await request.send();
+    final body = await response.stream.bytesToString();
+
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Upload ảnh thất bại (${response.statusCode})');
+      throw Exception('Upload ảnh thất bại (${response.statusCode}): $body');
+    } else {
+      print('✅ Upload ảnh khuôn mặt thành công: $body');
     }
   }
+
 }
