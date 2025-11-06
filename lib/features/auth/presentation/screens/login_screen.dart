@@ -26,7 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      print('🔹 Gửi request login...');
       final response = await _dio.post(
         '/v1/auth/login',
         data: {
@@ -36,49 +35,37 @@ class _LoginScreenState extends State<LoginScreen> {
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
-      print('✅ Status: ${response.statusCode}');
-      print('✅ Dữ liệu trả về: ${response.data}');
-
       if (response.statusCode == 200 && response.data['token'] != null) {
         await TokenStorage.saveToken(response.data['token']);
-        final role = response.data['role'] ?? 'pdt';
+        final role = response.data['role'] ?? response.data['user']['vaiTro'] ?? 'pdt';
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Đăng nhập thành công (${role.toUpperCase()})')),
         );
 
-        // Điều hướng theo role
-        switch (role) {
-          case 'admin':
-            Navigator.pushReplacementNamed(context, RouteNames.adminDashboard);
-            break;
-          case 'pdt':
-            Navigator.pushReplacementNamed(context, RouteNames.pdtDashboard);
-            break;
-          case 'giangvien':
-            Navigator.pushReplacementNamed(context, RouteNames.giangvienDashboard);
-            break;
-          case 'sinhvien':
-            Navigator.pushReplacementNamed(context, RouteNames.sinhvienDashboard);
-            break;
-          default:
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Không xác định vai trò người dùng')),
-            );
+        // ✅ Route theo vai trò
+        if (role == 'admin') {
+          Navigator.pushReplacementNamed(context, RouteNames.adminDashboard);
+        } else if (role == 'pdt') {
+          Navigator.pushReplacementNamed(context, RouteNames.pdtDashboard);
+        } else if (role == 'giangvien') {
+          Navigator.pushReplacementNamed(context, RouteNames.giangvienDashboard);
+        } else if (role == 'sinhvien') {
+          Navigator.pushReplacementNamed(context, RouteNames.sinhvienDashboard);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không xác định vai trò người dùng')),
+          );
         }
       } else {
         _error = 'Phản hồi không hợp lệ từ server';
       }
     } on DioException catch (e) {
-      print('❌ DioException: ${e.message}');
-      print('❌ Status code: ${e.response?.statusCode}');
-      print('❌ Response data: ${e.response?.data}');
       setState(() {
-        _error = e.response?.data['error']?.toString() ??
+        _error = e.response?.data['error']?['message'] ??
             'Đăng nhập thất bại (${e.response?.statusCode})';
       });
     } catch (e) {
-      print('❌ Exception: $e');
       _error = 'Lỗi không xác định: $e';
     }
 
@@ -122,11 +109,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+
                   if (_error != null)
-                    Text(
-                      _error!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
+                    Text(_error!, style: const TextStyle(color: Colors.red)),
+
                   const SizedBox(height: 8),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -141,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, RouteNames.register);
+                      Navigator.pushReplacementNamed(context, RouteNames.register);
                     },
                     child: const Text('Chưa có tài khoản? Đăng ký ngay'),
                   ),

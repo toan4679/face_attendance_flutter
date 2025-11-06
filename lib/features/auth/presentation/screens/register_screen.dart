@@ -19,6 +19,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _isLoading = false;
   String? _error;
+  String _selectedRole = 'giangvien'; // mặc định
 
   Future<void> _register() async {
     setState(() {
@@ -35,40 +36,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     try {
-      print('🔹 Gửi request đăng ký...');
       final response = await _dio.post(
         '/v1/auth/register',
         data: {
-          'loai': 'giangvien', // hoặc 'sinhvien' nếu bạn cho người dùng chọn
+          'loai': _selectedRole,
           'hoTen': _nameController.text.trim(),
           'email': _emailController.text.trim(),
           'matKhau': _passwordController.text.trim(),
-          'matKhau_confirmation': _passwordController.text.trim(), // ✅ Laravel yêu cầu xác nhận
+          'matKhau_confirmation': _passwordController.text.trim(),
         },
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
-      print('✅ Status: ${response.statusCode}');
-      print('✅ Dữ liệu trả về: ${response.data}');
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đăng ký thành công! Hãy đăng nhập.')),
+          SnackBar(content: Text('Đăng ký thành công! Hãy đăng nhập.')),
         );
         Navigator.pushReplacementNamed(context, RouteNames.login);
       } else {
         _error = 'Phản hồi không hợp lệ từ server';
       }
     } on DioException catch (e) {
-      print('❌ DioException: ${e.message}');
-      print('❌ Status code: ${e.response?.statusCode}');
-      print('❌ Response data: ${e.response?.data}');
       setState(() {
         _error = e.response?.data['error']?.toString() ??
             'Đăng ký thất bại (${e.response?.statusCode})';
       });
     } catch (e) {
-      print('❌ Exception: $e');
       _error = 'Lỗi không xác định: $e';
     }
 
@@ -95,6 +88,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 24),
+
+                  // 🔽 Dropdown chọn loại tài khoản
+                  DropdownButtonFormField<String>(
+                    value: _selectedRole,
+                    decoration: const InputDecoration(
+                      labelText: 'Loại tài khoản',
+                      prefixIcon: Icon(Icons.account_circle_outlined),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'giangvien', child: Text('Giảng viên')),
+                      DropdownMenuItem(value: 'sinhvien', child: Text('Sinh viên')),
+                    ],
+                    onChanged: (val) => setState(() => _selectedRole = val!),
+                  ),
+
+                  const SizedBox(height: 16),
                   TextField(
                     controller: _nameController,
                     decoration: const InputDecoration(
@@ -129,11 +138,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+
                   if (_error != null)
-                    Text(
-                      _error!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
+                    Text(_error!, style: const TextStyle(color: Colors.red)),
+
                   const SizedBox(height: 8),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -145,6 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text('Đăng ký'),
                   ),
+
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: () {

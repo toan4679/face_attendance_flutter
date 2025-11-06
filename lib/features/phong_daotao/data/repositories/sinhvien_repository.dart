@@ -15,26 +15,14 @@ class SinhVienRepository {
     required String fileName,
     Uint8List? webBytes,
     String? filePath,
-  }) async {
-    await api.importSinhVienExcel(
-      maLop: maLop,
-      fileName: fileName,
-      bytes: webBytes,
-      filePath: filePath,
-    );
-  }
+  }) async =>
+      api.importSinhVienExcel(maLop: maLop, fileName: fileName, bytes: webBytes, filePath: filePath);
 
   Future<void> uploadFacePhoto({
     required int maSV,
     required String fileName,
     Uint8List? webBytes,
     String? filePath,
-  }) async {
-    await api.uploadFacePhoto(
-      maSV: maSV,
-      fileName: fileName,
-      bytes: webBytes,
-      filePath: filePath,
-    );
-  }
+  }) async =>
+      api.uploadFacePhoto(maSV: maSV, fileName: fileName, bytes: webBytes, filePath: filePath);
 }
