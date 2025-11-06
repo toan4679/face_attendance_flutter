@@ -33,8 +33,55 @@ class _BuoiDaDiemDanhScreenState extends State<BuoiDaDiemDanhScreen> {
 
   void _openNotifications() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Chức năng thông báo đang được phát triển...")),
+      const SnackBar(
+          content: Text("Chức năng thông báo đang được phát triển...")),
     );
+  }
+
+  // Chuẩn hóa trạng thái
+  String normalizedStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'present':
+      case 'đúng giờ':
+        return 'Đúng giờ';
+      case 'late':
+      case 'muộn':
+      case 'đi muộn':
+        return 'Đi muộn';
+      case 'absent':
+      case 'vắng':
+        return 'Vắng';
+      default:
+        return 'Đúng giờ'; // mặc định
+    }
+  }
+
+  // Lấy màu theo trạng thái
+  Color getStatusColor(String status) {
+    switch (status) {
+      case 'Đúng giờ':
+        return Colors.green;
+      case 'Đi muộn':
+        return Colors.orange;
+      case 'Vắng':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Lấy icon theo trạng thái
+  IconData getStatusIcon(String status) {
+    switch (status) {
+      case 'Đúng giờ':
+        return Icons.check_circle;
+      case 'Đi muộn':
+        return Icons.error;
+      case 'Vắng':
+        return Icons.cancel;
+      default:
+        return Icons.help;
+    }
   }
 
   @override
@@ -42,9 +89,14 @@ class _BuoiDaDiemDanhScreenState extends State<BuoiDaDiemDanhScreen> {
     // Tính tổng số buổi và số buổi theo trạng thái
     int totalBuoi = widget.diemDanh.length;
     int coMat = widget.diemDanh
-        .where((b) => b.trangThai == 'present' || b.trangThai == 'late')
+        .where((b) {
+      String s = normalizedStatus(b.trangThai);
+      return s == 'Đúng giờ' || s == 'Đi muộn';
+    })
         .length;
-    int vang = widget.diemDanh.where((b) => b.trangThai == 'absent').length;
+    int vang = widget.diemDanh
+        .where((b) => normalizedStatus(b.trangThai) == 'Vắng')
+        .length;
 
     return Scaffold(
       appBar: AppBar(
@@ -219,31 +271,7 @@ class _BuoiDaDiemDanhScreenState extends State<BuoiDaDiemDanhScreen> {
                 int index = entry.key;
                 var buoi = entry.value;
 
-                Color getStatusColor(String status) {
-                  switch (status) {
-                    case 'present':
-                      return Colors.green;
-                    case 'absent':
-                      return Colors.red;
-                    case 'late':
-                      return Colors.orange;
-                    default:
-                      return Colors.grey;
-                  }
-                }
-
-                IconData getStatusIcon(String status) {
-                  switch (status) {
-                    case 'present':
-                      return Icons.check_circle;
-                    case 'absent':
-                      return Icons.cancel;
-                    case 'late':
-                      return Icons.error;
-                    default:
-                      return Icons.help;
-                  }
-                }
+                String status = normalizedStatus(buoi.trangThai);
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -282,24 +310,18 @@ class _BuoiDaDiemDanhScreenState extends State<BuoiDaDiemDanhScreen> {
                       // Dropdown thay đổi trạng thái
                       Row(
                         children: [
-                          Icon(getStatusIcon(buoi.trangThai),
-                              color: getStatusColor(buoi.trangThai)),
+                          Icon(getStatusIcon(status),
+                              color: getStatusColor(status)),
                           const SizedBox(width: 6),
                           DropdownButton<String>(
-                            value: buoi.trangThai,
+                            value: status,
                             items: const [
                               DropdownMenuItem(
-                                value: 'present',
-                                child: Text('Đúng giờ'),
-                              ),
+                                  value: 'Đúng giờ', child: Text('Đúng giờ')),
                               DropdownMenuItem(
-                                value: 'late',
-                                child: Text('Đi muộn'),
-                              ),
+                                  value: 'Đi muộn', child: Text('Đi muộn')),
                               DropdownMenuItem(
-                                value: 'absent',
-                                child: Text('Vắng'),
-                              ),
+                                  value: 'Vắng', child: Text('Vắng')),
                             ],
                             onChanged: (newValue) {
                               setState(() {
