@@ -61,6 +61,21 @@ class BuoiHocController extends ChangeNotifier {
     }
   }
 
+  Future<void> addMultiple(List<Map<String, dynamic>> list, BuildContext context) async {
+    try {
+      isLoading = true;
+      notifyListeners();
+      await repository.createMultiple(list);
+      if (selectedMaLopHP != null) await loadByLopHP(selectedMaLopHP!);
+      _snack(context, '✅ Tạo buổi học hàng loạt thành công', Colors.green);
+    } catch (e) {
+      _snack(context, '❌ Lỗi khi tạo buổi học hàng loạt: $e', Colors.redAccent);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   void _snack(BuildContext ctx, String msg, Color c) {
     if (!ctx.mounted) return;
     ScaffoldMessenger.of(ctx).showSnackBar(

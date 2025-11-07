@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart';
 import '../datasources/buoihoc_api.dart';
 import '../models/buoi_hoc_model.dart';
 
@@ -64,6 +65,9 @@ class BuoiHocRepository {
         : res.data;
     return BuoiHocModel.fromJson(obj);
   }
+
+  Future<void> createMultiple(List<Map<String, dynamic>> list) async {
+    await api.createMultiple(list);  }
 
   /// 🔹 Xóa buổi học
   Future<void> delete(int id) => api.delete(id);

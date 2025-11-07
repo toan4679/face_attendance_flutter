@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:face_attendance_flutter/core/network/api_constants.dart';
+import 'package:face_attendance_flutter/core/network/token_storage.dart';
 import 'package:face_attendance_flutter/routes/route_names.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -19,24 +20,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _isLoading = false;
   String? _error;
-  String _selectedRole = 'giangvien'; // mặc định
+  String _selectedRole = 'giangvien';
 
   Future<void> _register() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    setState(() { _isLoading = true; _error = null; });
 
     if (_passwordController.text != _confirmController.text) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Mật khẩu xác nhận không khớp';
-      });
+      setState(() { _isLoading = false; _error = 'Mật khẩu xác nhận không khớp'; });
       return;
     }
 
     try {
-      final response = await _dio.post(
+      final res = await _dio.post(
         '/v1/auth/register',
         data: {
           'loai': _selectedRole,
@@ -48,24 +43,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final token = res.data['token'] ?? res.data['access_token'];
+        if (token != null && token.toString().isNotEmpty) {
+          await TokenStorage.saveToken(token.toString()); // ✅ secure storage
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đăng ký thành công! Hãy đăng nhập.')),
+          const SnackBar(content: Text('Đăng ký thành công! Hãy đăng nhập.')),
         );
         Navigator.pushReplacementNamed(context, RouteNames.login);
       } else {
-        _error = 'Phản hồi không hợp lệ từ server';
+        setState(() => _error = 'Phản hồi không hợp lệ từ server');
       }
     } on DioException catch (e) {
       setState(() {
-        _error = e.response?.data['error']?.toString() ??
-            'Đăng ký thất bại (${e.response?.statusCode})';
+        _error = e.response?.data['error']?.toString()
+            ?? 'Đăng ký thất bại (${e.response?.statusCode})';
       });
     } catch (e) {
-      _error = 'Lỗi không xác định: $e';
+      setState(() => _error = 'Lỗi không xác định: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
-
-    setState(() => _isLoading = false);
   }
 
   @override
@@ -83,13 +82,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Đăng ký tài khoản',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
+                  const Text('Đăng ký tài khoản',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 24),
 
-                  // 🔽 Dropdown chọn loại tài khoản
                   DropdownButtonFormField<String>(
                     value: _selectedRole,
                     decoration: const InputDecoration(

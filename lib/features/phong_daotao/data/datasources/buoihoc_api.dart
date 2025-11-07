@@ -15,6 +15,11 @@ class BuoiHocApi {
     return _dio.post('/v1/pdt/buoihoc', data: body);
   }
 
+  Future<Response> createMultiple(List<Map<String, dynamic>> list) {
+    print('[DEBUG] 📤 POST /v1/pdt/buoihoc/multiple  list=${list.length} items');
+    return _dio.post('/v1/pdt/buoihoc/multiple', data: {'list': list});
+  }
+
   Future<Response> update(int id, Map<String, dynamic> body) {
     print('[DEBUG] 🛠 PATCH /v1/pdt/buoihoc/$id  body=$body');
     return _dio.patch('/v1/pdt/buoihoc/$id', data: body);

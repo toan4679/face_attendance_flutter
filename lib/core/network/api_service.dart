@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+import 'package:face_attendance_flutter/core/network/token_storage.dart';
 
 class ApiService {
   static const String baseUrl = "http://104.145.210.69/api/v1";
@@ -15,79 +15,105 @@ class ApiService {
       ..headers = {'Accept': 'application/json'};
   }
 
+  /// Luôn bắt đầu bằng "/"
+  String _normalize(String endpoint) {
+    if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+      return endpoint;
+    }
+    return endpoint.startsWith('/') ? endpoint : '/$endpoint';
+  }
+
   Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token') ?? prefs.getString('token');
+    final token = await TokenStorage.getToken(); // ✅ flutter_secure_storage
+    return (token != null && token.isNotEmpty) ? token : null;
   }
 
-  /// 🧾 GET
+  Map<String, String> _headers(String? token, {bool isJson = true}) {
+    final h = <String, String>{'Accept': 'application/json'};
+    if (isJson) h['Content-Type'] = 'application/json';
+    if (token != null) h['Authorization'] = 'Bearer $token'; // ✅ chỉ gắn khi có
+    return h;
+  }
+
+  void _logReq(String method, String url, String? token) {
+    final short = (token == null || token.isEmpty) ? '(no token)' : '${token.substring(0, 8)}…';
+    debugPrint('➡️ $method $url | token=$short');
+  }
+
+  /// GET
   Future<dynamic> get(String endpoint) async {
+    final url = _normalize(endpoint);
     try {
       final token = await _getToken();
-      final response = await _dio.get(
-        endpoint,
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-      return response.data;
+      _logReq('GET', '${_dio.options.baseUrl}$url', token);
+      final res = await _dio.get(url, options: Options(headers: _headers(token)));
+      return res.data;
     } on DioException catch (e) {
       _handleError(e);
     }
   }
 
-  /// ➕ POST — tự động phân biệt JSON và FormData
+  /// POST (JSON hoặc FormData)
   Future<dynamic> post(String endpoint, dynamic data) async {
+    final url = _normalize(endpoint);
     try {
       final token = await _getToken();
+      final isForm = data is FormData;
+      _logReq('POST', '${_dio.options.baseUrl}$url', token);
 
-      final bool isFormData = data is FormData;
-
-      final response = await _dio.post(
-        endpoint,
-        data: data, // ❗ Không jsonEncode nếu là FormData
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-            // Laravel cần multipart boundary, Dio sẽ tự set nếu ta KHÔNG ép cứng content-type
-            if (!isFormData) 'Content-Type': 'application/json',
-          },
-        ),
+      final res = await _dio.post(
+        url,
+        data: isForm ? data : jsonEncode(data),
+        options: Options(headers: _headers(token, isJson: !isForm)),
       );
-
-      return response.data;
+      return res.data;
     } on DioException catch (e) {
       _handleError(e);
     }
   }
 
-  /// ✏️ PUT
+  /// PUT
   Future<dynamic> put(String endpoint, dynamic data) async {
+    final url = _normalize(endpoint);
     try {
       final token = await _getToken();
-      final response = await _dio.put(
-        endpoint,
+      _logReq('PUT', '${_dio.options.baseUrl}$url', token);
+      final res = await _dio.put(
+        url,
         data: jsonEncode(data),
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        ),
+        options: Options(headers: _headers(token)),
       );
-      return response.data;
+      return res.data;
     } on DioException catch (e) {
       _handleError(e);
     }
   }
 
-  /// ❌ DELETE
+  /// DELETE
   Future<dynamic> delete(String endpoint) async {
+    final url = _normalize(endpoint);
     try {
       final token = await _getToken();
-      final response = await _dio.delete(
-        endpoint,
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      _logReq('DELETE', '${_dio.options.baseUrl}$url', token);
+      final res = await _dio.delete(url, options: Options(headers: _headers(token)));
+      return res.data;
+    } on DioException catch (e) {
+      _handleError(e);
+    }
+  }
+
+  /// UPLOAD (multipart)
+  Future<dynamic> upload(String endpoint, FormData formData) async {
+    final url = _normalize(endpoint);
+    try {
+      final token = await _getToken();
+      _logReq('UPLOAD', '${_dio.options.baseUrl}$url', token);
+      final res = await _dio.post(
+        url,
+        data: formData,
+        options: Options(headers: _headers(token, isJson: false)),
       );
-      return response.data;
+      return res.data;
     } on DioException catch (e) {
       _handleError(e);
     }
@@ -97,7 +123,7 @@ class ApiService {
     String message = "Lỗi không xác định";
     if (e.response != null) {
       final data = e.response?.data;
-      if (data is Map && data.containsKey('message')) {
+      if (data is Map && data['message'] is String) {
         message = data['message'];
       } else {
         message = "HTTP ${e.response?.statusCode}: ${e.response?.statusMessage}";
@@ -112,30 +138,4 @@ class ApiService {
     debugPrint('❌ API Error: $message');
     throw Exception(message);
   }
-
-  Future<dynamic> upload(String endpoint, FormData formData) async {
-    try {
-      final token = await _getToken();
-
-      debugPrint("📤 Upload API URL: $endpoint");
-      debugPrint("📦 Form fields: ${formData.fields}");
-      debugPrint("📸 File parts: ${formData.files.map((f) => f.key).toList()}");
-
-      final response = await _dio.post(
-        endpoint,
-        data: formData,
-        options: Options(headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-        }),
-      );
-
-      debugPrint("✅ Upload thành công (${response.statusCode}): ${response.data}");
-      return response.data;
-    } on DioException catch (e) {
-      debugPrint("❌ Upload thất bại: ${e.message}");
-      _handleError(e);
-    }
-  }
-
 }
