@@ -31,7 +31,7 @@ class _GiangVienBottomNavState extends State<GiangVienBottomNav> {
     Widget nextScreen;
     switch (index) {
       case 0:
-        nextScreen = GiangVienDashboardScreen(giangVien: gv);
+        nextScreen = GiangVienDashboardScreen();
         break;
       case 1:
         nextScreen = LichDayScreen(giangVien: gv);
@@ -46,7 +46,7 @@ class _GiangVienBottomNavState extends State<GiangVienBottomNav> {
         nextScreen = const ProfileScreen();
         break;
       default:
-        nextScreen = GiangVienDashboardScreen(giangVien: gv);
+        nextScreen = GiangVienDashboardScreen();
     }
 
     Navigator.pushReplacement(

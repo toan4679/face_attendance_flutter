@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/buoihoc_model.dart';
 import '../models/giangvien_model.dart';
 import 'package:face_attendance_flutter/core/network/token_storage.dart';
 
@@ -85,6 +86,27 @@ class GiangVienApi {
       } catch (_) {
         throw Exception("Không thể cập nhật giảng viên (${response.statusCode})");
       }
+    }
+  }
+  /// ✅ Lấy lịch dạy hôm nay của giảng viên
+  Future<List<BuoiHoc>> fetchLichDayHomNay(int maGV) async {
+    final token = await TokenStorage.getToken();
+    final url = Uri.parse("$baseUrl/$maGV/lichday/homnay");
+
+    final response = await http.get(url, headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+
+    print("📡 [GET] $url -> ${response.statusCode}");
+    print("📄 Body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List<dynamic> lichList = data['lichDayHomNay'] ?? [];
+      return lichList.map((e) => BuoiHoc.fromJson(e)).toList();
+    } else {
+      throw Exception('Không thể lấy lịch dạy hôm nay (${response.statusCode})');
     }
   }
 }

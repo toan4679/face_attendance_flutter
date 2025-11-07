@@ -4,6 +4,8 @@ import '../../gv_routes.dart';
 import '../widgets/giangvien_bottom_nav.dart';
 import '../widgets/gv_side_menu.dart';
 import '../../data/models/giangvien_model.dart';
+import '../controllers/giangvien_controller.dart';
+
 // ===== Hàm helper hiển thị thứ =====
 String getThu(DateTime? ngay) {
   if (ngay == null) return "-";
@@ -31,7 +33,6 @@ class LichDayScreen extends StatefulWidget {
   final GiangVien? giangVien;
   const LichDayScreen({super.key, this.giangVien});
 
-
   @override
   State<LichDayScreen> createState() => _LichDayScreenState();
 }
@@ -49,9 +50,10 @@ class _LichDayScreenState extends State<LichDayScreen> {
   final List<String> weeks = List.generate(10, (index) => 'Tuần ${index + 1}');
   DateTime selectedDate = DateTime.now();
 
-  late List<BuoiHoc> lichDayHomNay;
+  List<BuoiHoc> lichDayHomNay = [];
   List<BuoiHoc> displayedBuoiHoc = [];
   bool isFilteringByDate = true;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -60,75 +62,56 @@ class _LichDayScreenState extends State<LichDayScreen> {
     years = [for (int start = 2020; start <= currentYear; start++) '$start-${start + 1}'];
     selectedYear = years.last;
 
-    lichDayHomNay = BuoiHoc.buoiHocMau;
-    filterByDate(selectedDate);
+    _loadData();
   }
 
+  Future<void> _loadData() async {
+    if (widget.giangVien != null) {
+      try {
+        final list = await GiangVienController().getLichDayHomNay();
+        setState(() {
+          lichDayHomNay = list;
+          filterByDate(DateTime.now()); // Hiển thị hôm nay mặc định
+          _isLoading = false;
+        });
+      } catch (e) {
+        setState(() => _isLoading = false);
+        print("❌ Lỗi load lich dạy: $e");
+      }
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // --- Lọc theo ngày ---
   void filterByDate(DateTime date) {
     isFilteringByDate = true;
     displayedBuoiHoc = lichDayHomNay
         .where((b) =>
-    parseNgay(b.ngay)?.year == date.year &&
-        parseNgay(b.ngay)?.month == date.month &&
-        parseNgay(b.ngay)?.day == date.day)
+    b.ngayHoc.year == date.year &&
+        b.ngayHoc.month == date.month &&
+        b.ngayHoc.day == date.day)
         .toList();
     setState(() => selectedDate = date);
   }
 
+  // --- Lọc theo tuần (khi nhấn "Lọc") ---
   void filterByTermYearWeek() {
     isFilteringByDate = false;
+    final startOfWeek = getStartOfWeek(selectedDate);
+    final endOfWeek = getEndOfWeek(selectedDate);
+
     displayedBuoiHoc = lichDayHomNay
         .where((b) =>
-    b.ki == selectedTerm &&
-        b.namHoc == selectedYear &&
-        b.tuan == selectedWeek)
+    b.ngayHoc.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
+        b.ngayHoc.isBefore(endOfWeek.add(const Duration(days: 1))))
         .toList();
-
-    if (displayedBuoiHoc.isNotEmpty) {
-      final firstBuoi = parseNgay(displayedBuoiHoc.first.ngay)!;
-      final startOfWeek = getStartOfWeek(firstBuoi);
-      final endOfWeek = getEndOfWeek(firstBuoi);
-
-      // Highlight hôm nay nếu nằm trong tuần, hoặc ngày đầu tuần
-      final now = DateTime.now();
-      if (now.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
-          now.isBefore(endOfWeek.add(const Duration(days: 1)))) {
-        selectedDate = now;
-      } else {
-        selectedDate = startOfWeek;
-      }
-    }
 
     setState(() {});
   }
 
-  DateTime? parseNgay(dynamic ngay) {
-    if (ngay == null) return null;
-    if (ngay is DateTime) return ngay;
-    if (ngay is String) {
-      try {
-        return DateTime.parse(ngay);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  }
-
-  Map<DateTime, List<BuoiHoc>> groupBuoiHocByDate(List<BuoiHoc> buoiHocList) {
-    final Map<DateTime, List<BuoiHoc>> grouped = {};
-    for (var b in buoiHocList) {
-      final date = parseNgay(b.ngay);
-      if (date == null) continue;
-      final key = DateTime(date.year, date.month, date.day);
-      if (!grouped.containsKey(key)) grouped[key] = [];
-      grouped[key]!.add(b);
-    }
-    final sortedKeys = grouped.keys.toList()..sort();
-    return {for (var k in sortedKeys) k: grouped[k]!};
-  }
-
-  DateTime getStartOfWeek(DateTime date) => date.subtract(Duration(days: date.weekday - 1));
+  DateTime getStartOfWeek(DateTime date) =>
+      date.subtract(Duration(days: date.weekday - 1));
   DateTime getEndOfWeek(DateTime date) => getStartOfWeek(date).add(const Duration(days: 6));
 
   List<DateTime> generateCalendarDays(DateTime month) {
@@ -143,6 +126,18 @@ class _LichDayScreenState extends State<LichDayScreen> {
     final start = getStartOfWeek(anyDateInWeek);
     final end = getEndOfWeek(anyDateInWeek);
     return "Từ ${start.day}/${start.month}/${start.year} đến ${end.day}/${end.month}/${end.year}";
+  }
+
+  Map<DateTime, List<BuoiHoc>> groupBuoiHocByDate(List<BuoiHoc> buoiHocList) {
+    final Map<DateTime, List<BuoiHoc>> grouped = {};
+    for (var b in buoiHocList) {
+      final date = b.ngayHoc;
+      final key = DateTime(date.year, date.month, date.day);
+      if (!grouped.containsKey(key)) grouped[key] = [];
+      grouped[key]!.add(b);
+    }
+    final sortedKeys = grouped.keys.toList()..sort();
+    return {for (var k in sortedKeys) k: grouped[k]!};
   }
 
   @override
@@ -187,7 +182,9 @@ class _LichDayScreenState extends State<LichDayScreen> {
           ],
         ),
       ),
-      body: Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
         children: [
           // --- Bộ lọc ---
           Padding(
@@ -220,7 +217,8 @@ class _LichDayScreenState extends State<LichDayScreen> {
                   style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF154B71)),
                   onPressed: filterByTermYearWeek,
-                  child: const Text("Lọc", style: TextStyle(color: Colors.white)),
+                  child: const Text("Lọc",
+                      style: TextStyle(color: Colors.white)),
                 ),
               ],
             ),
@@ -283,7 +281,7 @@ class _LichDayScreenState extends State<LichDayScreen> {
                 const SizedBox(width: 8),
                 if (!isFilteringByDate && displayedBuoiHoc.isNotEmpty)
                   Text(
-                    getWeekRangeFromDate(parseNgay(displayedBuoiHoc.first.ngay)!),
+                    getWeekRangeFromDate(displayedBuoiHoc.first.ngayHoc),
                     style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black54,
@@ -299,7 +297,7 @@ class _LichDayScreenState extends State<LichDayScreen> {
               decoration: const BoxDecoration(
                 color: Color(0xFFF0F0F0), // nền xám
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(45), // bo góc trên trái
+                  topLeft: Radius.circular(45),
                 ),
               ),
               padding: const EdgeInsets.all(8),
@@ -307,9 +305,11 @@ class _LichDayScreenState extends State<LichDayScreen> {
                   ? const Center(child: Text("Không có buổi học"))
                   : ListView(
                 children: [
-                  for (var entry in groupBuoiHocByDate(displayedBuoiHoc).entries)
+                  for (var entry
+                  in groupBuoiHocByDate(displayedBuoiHoc).entries)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -330,7 +330,7 @@ class _LichDayScreenState extends State<LichDayScreen> {
                                     color: Color(0xFF154B71)),
                                 title: Text(b.tenMon),
                                 subtitle: Text(
-                                    "${b.phong} | Thứ: ${getThu(parseNgay(b.ngay))} | ${b.thoiGian ?? ''} | Lớp: ${b.lop}"),
+                                    "${b.phongHoc} | Thứ: ${getThu(b.ngayHoc)} | ${b.thoiGian} | Lớp: ${b.maSoLopHP}"),
                               ),
                             ),
                         ],
