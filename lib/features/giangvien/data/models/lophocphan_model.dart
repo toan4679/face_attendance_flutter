@@ -1,6 +1,6 @@
 import 'monhoc_model.dart';
 import 'giangvien_model.dart';
-import 'sinhvien_model.dart'; // model SinhVien
+import 'sinhvien_model.dart';
 
 class LopHocPhan {
   final int maLopHP;
@@ -13,7 +13,7 @@ class LopHocPhan {
   final MonHoc monHoc;
   final GiangVien giangVien;
 
-  final List<SinhVien> danhSachSinhVien; // từ database
+  final List<SinhVien> danhSachSinhVien;
   final int diemDanhHienTai;
   final int tongSoBuoi;
 
@@ -42,19 +42,22 @@ class LopHocPhan {
         required MonHoc monHoc,
         required GiangVien giangVien}) {
     return LopHocPhan(
-      maLopHP: json['maLopHP'],
-      maSoLopHP: json['maSoLopHP'],
-      hocKy: json['hocKy'],
-      namHoc: json['namHoc'],
-      thongTinLichHoc: json['thongTinLopHoc'],
-      ngayBatDau: DateTime.parse(json['ngayBatDau']),
-      ngayKetThuc: DateTime.parse(json['ngayKetThuc']),
+      maLopHP: json['maLopHP'] as int? ?? 0,
+      maSoLopHP: json['maSoLopHP'] as String? ?? '',
+      hocKy: json['hocKy'] as String? ?? '',
+      namHoc: json['namHoc'] as String? ?? '',
+      thongTinLichHoc: json['thongTinLopHoc'] as String? ?? '',
+      ngayBatDau: json['ngayBatDau'] != null
+          ? DateTime.parse(json['ngayBatDau'] as String)
+          : DateTime.now(),
+      ngayKetThuc: json['ngayKetThuc'] != null
+          ? DateTime.parse(json['ngayKetThuc'] as String)
+          : DateTime.now(),
       monHoc: monHoc,
       giangVien: giangVien,
       danhSachSinhVien: sinhVienList,
-      diemDanhHienTai: json['diemDanhHienTai'] ?? 0,
-      tongSoBuoi: json['tongSoBuoi'] ?? 0,
+      diemDanhHienTai: json['diemDanhHienTai'] as int? ?? 0,
+      tongSoBuoi: json['tongSoBuoi'] as int? ?? 0,
     );
   }
-
 }

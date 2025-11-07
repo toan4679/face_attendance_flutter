@@ -23,47 +23,36 @@ class SinhVien {
   String get avatarOrDefault => avatar ?? 'assets/images/toandeptrai.jpg';
 
   factory SinhVien.fromJson(Map<String, dynamic> json) {
+    String _asString(dynamic v, [String def = '']) => v == null ? def : v.toString();
+    int _asInt(dynamic v, [int def = 0]) {
+      if (v == null) return def;
+      if (v is int) return v;
+      if (v is String) return int.tryParse(v) ?? def;
+      if (v is double) return v.toInt();
+      return def;
+    }
+
+    List<DiemDanhBuoiHocChiTiet> _asList(dynamic v) {
+      if (v is List) {
+        return v
+            .where((e) => e is Map<String, dynamic>)
+            .map((e) => DiemDanhBuoiHocChiTiet.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return <DiemDanhBuoiHocChiTiet>[];
+    }
+
     return SinhVien(
-      ma: json['ma'] ?? json['maSV'] ?? '',
-      ten: json['ten'] ?? json['tenSV'] ?? '',
-      lop: json['lop'] ?? '',
-      trangThai: json['trangThai'] ?? 'unknown',
-      avatar: json['avatar'],
-      soBuoiDiemDanh: json['soBuoiDiemDanh'] ?? 0,
-      diemDanhChiTiet: (json['diemDanhChiTiet'] as List?)
-          ?.map((e) => DiemDanhBuoiHocChiTiet.fromJson(e))
-          .toList() ??
-          [],
+      ma: _asString(json['ma'] ?? json['maSV']),
+      ten: _asString(json['ten'] ?? json['tenSV']),
+      lop: _asString(json['lop']),
+      trangThai: _asString(json['trangThai'], 'unknown'),
+      avatar: json['avatar'] == null ? null : _asString(json['avatar']),
+      soBuoiDiemDanh: _asInt(json['soBuoiDiemDanh']),
+      diemDanhChiTiet: _asList(json['diemDanhChiTiet']),
     );
   }
 }
 
-// chitiet_sv_diemdanh_model.dart
-class DiemDanhBuoiHocChiTiet {
-  final String monHoc;
-  final String lop;
-  final DateTime ngay;
-  final DateTime gio;
-  final String phong;
-  String trangThai;
-
-  DiemDanhBuoiHocChiTiet({
-    required this.monHoc,
-    required this.lop,
-    required this.ngay,
-    required this.gio,
-    required this.phong,
-    required this.trangThai,
-  });
-
-  factory DiemDanhBuoiHocChiTiet.fromJson(Map<String, dynamic> json) {
-    return DiemDanhBuoiHocChiTiet(
-      monHoc: json['monHoc'] ?? '',
-      lop: json['lop'] ?? '',
-      ngay: DateTime.parse(json['ngay']),
-      gio: DateTime.parse(json['gio']),
-      phong: json['phong'] ?? '',
-      trangThai: json['trangThai'] ?? 'unknown',
-    );
-  }
-}
+// (Lưu ý: Nếu bạn đang dùng lớp DiemDanhBuoiHocChiTiet thứ hai bên dưới file này thì giữ nguyên,
+// nhưng nên đảm bảo nơi parse DateTime sử dụng tryParse như đã làm ở file chitiet_sv_diemdanh_model.dart.)

@@ -75,13 +75,24 @@ class GiangVienController with ChangeNotifier {
     await fetchLichDayHomNay(currentGiangVien!.maGV);
   }
 
-  // ===============================
-  // 🧾 Lấy danh sách sinh viên của 1 buổi học
-  // ===============================
+// 🧾 Lấy danh sách sinh viên của 1 buổi học
   Future<List<Map<String, dynamic>>> getDanhSachSinhVien(int maBuoi) async {
     try {
       final response = await _repo.getDanhSachSinhVienTheoBuoi(maBuoi);
-      return response;
+
+      // Nếu response là List<dynamic>, ép kiểu về List<Map<String, dynamic>>
+      if (response is List) {
+        return response.map<Map<String, dynamic>>((e) {
+          if (e is Map<String, dynamic>) {
+            return e;
+          } else {
+            return {};
+          }
+        }).toList();
+      }
+
+      // Trường hợp khác trả về rỗng
+      return [];
     } catch (e) {
       debugPrint("❌ Lỗi khi lấy danh sách sinh viên: $e");
       rethrow;
