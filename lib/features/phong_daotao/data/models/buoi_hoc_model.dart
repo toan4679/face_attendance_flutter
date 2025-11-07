@@ -2,13 +2,14 @@ class BuoiHocModel {
   final int maBuoi;
   final int maLopHP;
   final int? maGV;
-  final String thu;             // "Thứ 2"..."Chủ nhật"
-  final int tietBatDau;         // 1..12
-  final int tietKetThuc;        // >= tietBatDau
+  final String thu;
+  final int tietBatDau;
+  final int tietKetThuc;
   final String phongHoc;
+  final String? ngayHoc;        // 🆕 ngày học
+  final String? gioBatDau;      // 🆕 giờ bắt đầu
+  final String? gioKetThuc;     // 🆕 giờ kết thúc
 
-
-  // 🆕 Thêm các trường lồng
   final Map<String, dynamic>? lopHocPhan;
   final Map<String, dynamic>? giangVien;
 
@@ -20,33 +21,39 @@ class BuoiHocModel {
     required this.tietBatDau,
     required this.tietKetThuc,
     required this.phongHoc,
+    this.ngayHoc,
+    this.gioBatDau,
+    this.gioKetThuc,
     this.lopHocPhan,
     this.giangVien,
   });
 
   factory BuoiHocModel.fromJson(Map<String, dynamic> json) => BuoiHocModel(
-    maBuoi: json['maBuoi'],
-    maLopHP: json['maLopHP'],
+    maBuoi: json['maBuoi'] ?? json['id'] ?? 0,
+    maLopHP: json['maLopHP'] ?? 0,
     maGV: json['maGV'],
     thu: json['thu'] ?? '',
-    tietBatDau: (json['tietBatDau'] ?? 0) is String
-        ? int.tryParse(json['tietBatDau']) ?? 0
-        : (json['tietBatDau'] ?? 0),
-    tietKetThuc: (json['tietKetThuc'] ?? 0) is String
-        ? int.tryParse(json['tietKetThuc']) ?? 0
-        : (json['tietKetThuc'] ?? 0),
+    tietBatDau: int.tryParse(json['tietBatDau'].toString()) ?? 0,
+    tietKetThuc: int.tryParse(json['tietKetThuc'].toString()) ?? 0,
     phongHoc: json['phongHoc'] ?? '',
-    // 🆕 Parse thêm các object lồng
+    ngayHoc: json['ngayHoc'],
+    gioBatDau: json['gioBatDau'],
+    gioKetThuc: json['gioKetThuc'],
     lopHocPhan: json['lop_hoc_phan'],
     giangVien: json['giang_vien'],
   );
 
+  /// ✅ Dùng để gửi API hoặc hiển thị lại khi sửa
   Map<String, dynamic> toJson() => {
+    'maBuoi': maBuoi,
     'maLopHP': maLopHP,
     if (maGV != null) 'maGV': maGV,
     'thu': thu,
     'tietBatDau': tietBatDau,
     'tietKetThuc': tietKetThuc,
     'phongHoc': phongHoc,
+    if (ngayHoc != null) 'ngayHoc': ngayHoc,
+    if (gioBatDau != null) 'gioBatDau': gioBatDau,
+    if (gioKetThuc != null) 'gioKetThuc': gioKetThuc,
   };
 }

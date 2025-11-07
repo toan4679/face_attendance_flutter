@@ -18,58 +18,57 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   String? _error;
+  String _loai = 'pdt'; // đổi tuỳ module
 
   Future<void> _login() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    setState(() { _isLoading = true; _error = null; });
 
     try {
-      final response = await _dio.post(
+      final res = await _dio.post(
         '/v1/auth/login',
         data: {
           'email': _emailController.text.trim(),
           'matKhau': _passwordController.text.trim(),
+          'loai': _loai,
         },
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
-      if (response.statusCode == 200 && response.data['token'] != null) {
-        await TokenStorage.saveToken(response.data['token']);
-        final role = response.data['role'] ?? response.data['user']['vaiTro'] ?? 'pdt';
+      final data  = res.data;
+      final token = data['token'] ?? data['access_token'];
 
+      if (res.statusCode == 200 && token != null && token.toString().isNotEmpty) {
+        await TokenStorage.saveToken(token.toString()); // ✅ secure storage
+
+        final role = data['role'] ?? data['user']?['vaiTro'] ?? _loai;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Đăng nhập thành công (${role.toUpperCase()})')),
         );
 
-        // ✅ Route theo vai trò
-        if (role == 'admin') {
-          Navigator.pushReplacementNamed(context, RouteNames.adminDashboard);
-        } else if (role == 'pdt') {
-          Navigator.pushReplacementNamed(context, RouteNames.pdtDashboard);
-        } else if (role == 'giangvien') {
-          Navigator.pushReplacementNamed(context, RouteNames.giangvienDashboard);
-        } else if (role == 'sinhvien') {
-          Navigator.pushReplacementNamed(context, RouteNames.sinhvienDashboard);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không xác định vai trò người dùng')),
-          );
+        switch (role) {
+          case 'admin':    Navigator.pushReplacementNamed(context, RouteNames.adminDashboard); break;
+          case 'pdt':      Navigator.pushReplacementNamed(context, RouteNames.pdtDashboard);   break;
+          case 'giangvien':Navigator.pushReplacementNamed(context, RouteNames.giangvienDashboard); break;
+          case 'sinhvien': Navigator.pushReplacementNamed(context, RouteNames.sinhvienDashboard);  break;
+          default:
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Không xác định vai trò người dùng')),
+            );
         }
       } else {
-        _error = 'Phản hồi không hợp lệ từ server';
+        setState(() => _error = 'Phản hồi không hợp lệ từ server');
       }
     } on DioException catch (e) {
       setState(() {
-        _error = e.response?.data['error']?['message'] ??
-            'Đăng nhập thất bại (${e.response?.statusCode})';
+        _error = e.response?.data['error']?['message']
+            ?? e.response?.data['message']
+            ?? 'Đăng nhập thất bại (${e.response?.statusCode})';
       });
     } catch (e) {
-      _error = 'Lỗi không xác định: $e';
+      setState(() => _error = 'Lỗi không xác định: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
-
-    setState(() => _isLoading = false);
   }
 
   @override
@@ -87,11 +86,25 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Đăng nhập hệ thống',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
+                  const Text('Đăng nhập hệ thống', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 24),
+
+                  DropdownButtonFormField<String>(
+                    value: _loai,
+                    decoration: const InputDecoration(
+                      labelText: 'Loại tài khoản',
+                      prefixIcon: Icon(Icons.account_circle_outlined),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'pdt', child: Text('Phòng Đào Tạo')),
+                      DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                      DropdownMenuItem(value: 'giangvien', child: Text('Giảng viên')),
+                      DropdownMenuItem(value: 'sinhvien', child: Text('Sinh viên')),
+                    ],
+                    onChanged: (v) => setState(() => _loai = v ?? 'pdt'),
+                  ),
+
+                  const SizedBox(height: 16),
                   TextField(
                     controller: _emailController,
                     decoration: const InputDecoration(
@@ -110,8 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  if (_error != null)
-                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                  if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
 
                   const SizedBox(height: 8),
                   ElevatedButton(
@@ -123,13 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text('Đăng nhập'),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(context, RouteNames.register);
-                    },
-                    child: const Text('Chưa có tài khoản? Đăng ký ngay'),
                   ),
                 ],
               ),
