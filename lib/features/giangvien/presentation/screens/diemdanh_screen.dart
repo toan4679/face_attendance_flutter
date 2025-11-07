@@ -6,10 +6,8 @@ import '../controllers/giangvien_controller.dart';
 import 'diemdanh_qr_screen.dart';
 import 'kq_diemdanh_screen.dart';
 
-// ===== ENUM TRẠNG THÁI BUỔI HỌC =====
 enum TrangThaiBuoiHoc { chuaDenGio, dangDienRa, ketThuc }
 
-// ===== EXTENSION CHO BuoiHoc =====
 extension BuoiHocStatus on BuoiHoc {
   TrangThaiBuoiHoc get trangThai {
     final now = DateTime.now();
@@ -40,7 +38,6 @@ extension BuoiHocStatus on BuoiHoc {
   }
 }
 
-// ===== Helper =====
 String getThu(DateTime ngay) {
   switch (ngay.weekday) {
     case DateTime.monday:
@@ -84,21 +81,27 @@ class _DiemDanhScreenState extends State<DiemDanhScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLichDayHomNay();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadLichDayHomNay();
+    });
   }
 
   Future<void> _loadLichDayHomNay() async {
     try {
       await _controller.fetchLichDayHomNayCurrent();
-      setState(() {
-        _lichDay = _controller.lichDayHomNay;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _lichDay = _controller.lichDayHomNay;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -106,16 +109,28 @@ class _DiemDanhScreenState extends State<DiemDanhScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF5F5F5),
       drawer: GVSideMenu(
         giangVienId:
         _controller.currentGiangVien?.maGV.toString() ?? 'Chưa có ID',
         onClose: () => Navigator.pop(context),
       ),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF154B71),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF154B71), Color(0xFF0D2A47)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         elevation: 0,
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
         title: const Text(
           "ĐIỂM DANH BUỔI HỌC",
           style: TextStyle(
@@ -124,67 +139,61 @@ class _DiemDanhScreenState extends State<DiemDanhScreen> {
             fontSize: 18,
           ),
         ),
+        centerTitle: true,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF154B71),
+        ),
+      )
           : _error != null
           ? Center(
-        child: Text(
-          "❌ Lỗi load dữ liệu: $_error",
-          style: const TextStyle(color: Colors.red),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline,
+                color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              "Lỗi tải dữ liệu",
+              style: const TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error ?? "",
+              textAlign: TextAlign.center,
+              style:
+              const TextStyle(fontSize: 14, color: Colors.black54),
+            ),
+          ],
         ),
       )
           : _lichDay.isEmpty
-          ? const Center(
-        child: Text(
-          "Hôm nay bạn không có buổi học nào.",
-          style: TextStyle(fontSize: 16, color: Colors.black54),
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.calendar_today,
+                color: Colors.grey[400], size: 64),
+            const SizedBox(height: 16),
+            Text(
+              "Hôm nay bạn không có buổi học nào",
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500),
+            ),
+          ],
         ),
       )
           : ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _lichDay.length,
         itemBuilder: (context, index) {
-          final mon = _lichDay[index];
-          return Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.15),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("${mon.tenMon} - ${mon.maSoLopHP}",
-                    style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
-                Text(
-                  "Thời gian: ${getThu(mon.ngayHoc)}, ${formatNgay(mon.ngayHoc)} | ${mon.thoiGian}",
-                  style: const TextStyle(
-                      fontSize: 13, color: Colors.black54),
-                ),
-                const SizedBox(height: 6),
-                Text("Phòng: ${mon.phongHoc}",
-                    style: const TextStyle(
-                        fontSize: 13, color: Colors.black54)),
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: _buildActionButton(context, mon),
-                ),
-              ],
-            ),
-          );
+          final buoi = _lichDay[index];
+          return _buildSessionCard(context, buoi, index);
         },
       ),
       bottomNavigationBar:
@@ -192,52 +201,270 @@ class _DiemDanhScreenState extends State<DiemDanhScreen> {
     );
   }
 
-  Widget _buildActionButton(BuildContext context, BuoiHoc mon) {
-    final trangThai = mon.trangThai;
+  Widget _buildSessionCard(
+      BuildContext context, BuoiHoc buoi, int index) {
+    final trangThai = buoi.trangThai;
+    final statusColor = _getStatusColor(trangThai);
+    final statusLabel = _getStatusLabel(trangThai);
+    final statusIcon = _getStatusIcon(trangThai);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border(
+          left: BorderSide(color: statusColor, width: 5),
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [statusColor.withOpacity(0.1), statusColor.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        buoi.tenMon,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF154B71),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        buoi.maSoLopHP,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: statusColor, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(statusIcon, color: statusColor, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        statusLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDetailRow(
+                  Icons.calendar_today_outlined,
+                  "${getThu(buoi.ngayHoc)}, ${formatNgay(buoi.ngayHoc)}",
+                  Colors.blue[700]!,
+                ),
+                const SizedBox(height: 10),
+                _buildDetailRow(
+                  Icons.access_time,
+                  buoi.thoiGian,
+                  Colors.orange[700]!,
+                ),
+                const SizedBox(height: 10),
+                _buildDetailRow(
+                  Icons.meeting_room,
+                  "Phòng ${buoi.phongHoc}",
+                  Colors.green[700]!,
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: _buildActionButton(context, buoi),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String text, Color color) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getStatusColor(TrangThaiBuoiHoc trangThai) {
+    switch (trangThai) {
+      case TrangThaiBuoiHoc.chuaDenGio:
+        return Colors.grey;
+      case TrangThaiBuoiHoc.dangDienRa:
+        return Colors.green;
+      case TrangThaiBuoiHoc.ketThuc:
+        return Colors.blue[900]!;
+    }
+  }
+
+  String _getStatusLabel(TrangThaiBuoiHoc trangThai) {
+    switch (trangThai) {
+      case TrangThaiBuoiHoc.chuaDenGio:
+        return "Chưa đến giờ";
+      case TrangThaiBuoiHoc.dangDienRa:
+        return "Đang diễn ra";
+      case TrangThaiBuoiHoc.ketThuc:
+        return "Kết thúc";
+    }
+  }
+
+  IconData _getStatusIcon(TrangThaiBuoiHoc trangThai) {
+    switch (trangThai) {
+      case TrangThaiBuoiHoc.chuaDenGio:
+        return Icons.schedule;
+      case TrangThaiBuoiHoc.dangDienRa:
+        return Icons.play_circle_filled;
+      case TrangThaiBuoiHoc.ketThuc:
+        return Icons.check_circle;
+    }
+  }
+
+  Widget _buildActionButton(BuildContext context, BuoiHoc buoi) {
+    final trangThai = buoi.trangThai;
 
     switch (trangThai) {
       case TrangThaiBuoiHoc.chuaDenGio:
-        return const SizedBox();
-      case TrangThaiBuoiHoc.dangDienRa:
-        return ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF154B71),
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          ),
-          onPressed: () async {
-            final ketThuc = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DiemDanhQRScreen(buoiHoc: mon),
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey[300],
+              foregroundColor: Colors.grey[700],
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
-            );
-            if (ketThuc == true) _loadLichDayHomNay();
-          },
-          child: const Text("Điểm danh",
-              style: TextStyle(fontSize: 13, color: Colors.white)),
+            ),
+            icon: const Icon(Icons.lock, size: 18),
+            label: const Text(
+              "Chưa đến giờ điểm danh",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            onPressed: null,
+          ),
         );
-      case TrangThaiBuoiHoc.ketThuc:
-        return ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF7B7B7B),
-            shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => KetQuaDiemDanhScreen(buoiHoc: mon),
+
+      case TrangThaiBuoiHoc.dangDienRa:
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
-            );
-          },
-          child: const Text("Xem kết quả điểm danh",
-              style: TextStyle(fontSize: 13, color: Colors.white)),
+            ),
+            icon: const Icon(Icons.qr_code_2, size: 18),
+            label: const Text(
+              "Bắt đầu điểm danh",
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+            onPressed: () async {
+              final ketThuc = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DiemDanhQRScreen(buoiHoc: buoi),
+                ),
+              );
+              if (ketThuc == true) _loadLichDayHomNay();
+            },
+          ),
+        );
+
+      case TrangThaiBuoiHoc.ketThuc:
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF154B71),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            icon: const Icon(Icons.description, size: 18),
+            label: const Text(
+              "Xem kết quả điểm danh",
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => KetQuaDiemDanhScreen(buoiHoc: buoi),
+                ),
+              );
+            },
+          ),
         );
     }
   }

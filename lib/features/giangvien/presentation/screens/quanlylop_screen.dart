@@ -21,27 +21,45 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String searchText = '';
   bool loading = true;
+  String? _error; // Add local error state to track error messages
   List<LopHocPhan> dsLop = [];
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   Future<void> _loadData() async {
     try {
       final repo = LopHocPhanRepository(LopHocPhanRemoteDataSource());
       final data = await repo.getLopHocPhan();
-      setState(() {
-        dsLop = data;
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          dsLop = data;
+          loading = false;
+          _error = null; // Clear error when data loads successfully
+        });
+      }
     } catch (e) {
-      setState(() => loading = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Lỗi tải dữ liệu lớp: $e')));
+      if (mounted) {
+        setState(() {
+          loading = false;
+          _error = e.toString(); // Store error in local state instead of just showing SnackBar
+        });
+      }
     }
+  }
+
+  void _clearError() {
+    setState(() => _error = null);
+  }
+
+  void _retryLoadData() {
+    setState(() => loading = true);
+    _loadData();
   }
 
   @override
@@ -60,156 +78,293 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
       ),
       appBar: AppBar(
         backgroundColor: const Color(0xFF154B71),
+        elevation: 0,
         title: const Text(
           "QUẢN LÝ LỚP HỌC",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
+        actions: [
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 24,
-                  backgroundImage: AssetImage('assets/images/teacher.jpg'),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  widget.giangVien?.hoTen ?? "Đang tải...",
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87),
-                ),
-              ],
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white.withOpacity(0.3),
+                child: const Icon(Icons.person, color: Colors.white, size: 20),
+              ),
             ),
           ),
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF0F0F0),
-                borderRadius:
-                BorderRadius.only(topLeft: Radius.circular(45)),
-              ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 20),
-                    child: Row(
-                      children: [
-                        const Expanded(
-                          flex: 3,
-                          child: Text(
-                            "Lớp học phần",
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold),
+        ],
+      ),
+      body: Stack(
+        children: [
+          loading
+              ? const Center(
+            child: CircularProgressIndicator(color: Color(0xFF154B71)),
+          )
+              : SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  color: const Color(0xFF154B71),
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.person, size: 32, color: Color(0xFF154B71)),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.giangVien?.hoTen ?? "Đang tải...",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            "Mã GV: ${widget.giangVien?.maGV ?? '--'}",
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Lớp học phần",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF154B71),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: "Tìm kiếm lớp...",
+                          hintStyle: const TextStyle(color: Colors.grey),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFF154B71)),
+                          suffixIcon: searchText.isNotEmpty
+                              ? IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            onPressed: () {
+                              setState(() => searchText = '');
+                            },
+                          )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
                           ),
                         ),
-                        Expanded(
-                          flex: 5,
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: "Tìm kiếm lớp...",
-                              filled: true,
-                              fillColor: Colors.white,
-                              suffixIcon: const Icon(Icons.search),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            onChanged: (v) =>
-                                setState(() => searchText = v),
+                        onChanged: (v) => setState(() => searchText = v),
+                      ),
+                    ],
+                  ),
+                ),
+                if (filtered.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Column(
+                      children: [
+                        Icon(Icons.class_, size: 48, color: Colors.grey[300]),
+                        const SizedBox(height: 12),
+                        Text(
+                          "Không tìm thấy lớp học",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  Expanded(
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ListView.builder(
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 16),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
                         final lop = filtered[index];
+                        final attendancePercent = (lop.tiLeDiemDanh * 100).toInt();
+
                         return GestureDetector(
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    ThongTinLopScreen(lop: lop),
+                                builder: (_) => ThongTinLopScreen(lop: lop),
                               ),
                             );
                           },
                           child: Container(
-                            margin:
-                            const EdgeInsets.symmetric(vertical: 8),
-                            padding: const EdgeInsets.all(14),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.grey[200]!,
+                                width: 1,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.grey.withOpacity(0.15),
-                                  blurRadius: 5,
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
                             ),
                             child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  "${lop.monHoc.tenMon} - ${lop.maSoLopHP}",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  lop.thongTinLichHoc,
-                                  style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.black54),
-                                ),
-                                const SizedBox(height: 8),
                                 Row(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      "Điểm danh: ${lop.diemDanhHienTai}/${lop.tongSoBuoi}",
-                                      style:
-                                      const TextStyle(fontSize: 13),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            lop.monHoc.tenMon,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                              color: Color(0xFF154B71),
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            lop.maSoLopHP,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    Text(
-                                      "${(lop.tiLeDiemDanh * 100).toStringAsFixed(1)}%",
-                                      style: const TextStyle(
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF154B71).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        "$attendancePercent%",
+                                        style: const TextStyle(
                                           fontSize: 13,
-                                          fontWeight: FontWeight.w600),
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF154B71),
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    lop.thongTinLichHoc,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "Điểm danh: ${lop.diemDanhHienTai}/${lop.tongSoBuoi}",
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[700],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: attendancePercent >= 80
+                                            ? Colors.green.withOpacity(0.1)
+                                            : attendancePercent >= 60
+                                            ? Colors.orange.withOpacity(0.1)
+                                            : Colors.red.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        attendancePercent >= 80
+                                            ? "Tốt"
+                                            : attendancePercent >= 60
+                                            ? "Trung bình"
+                                            : "Cần cải thiện",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: attendancePercent >= 80
+                                              ? Colors.green
+                                              : attendancePercent >= 60
+                                              ? Colors.orange
+                                              : Colors.red,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: LinearProgressIndicator(
                                     value: lop.tiLeDiemDanh,
-                                    backgroundColor: Colors.grey[300],
-                                    color: const Color(0xFF154B71),
-                                    minHeight: 8,
+                                    backgroundColor: Colors.grey[200],
+                                    color: attendancePercent >= 80
+                                        ? Colors.green
+                                        : attendancePercent >= 60
+                                        ? Colors.orange
+                                        : Colors.red,
+                                    minHeight: 6,
                                   ),
                                 ),
                               ],
@@ -219,10 +374,93 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
                       },
                     ),
                   ),
-                ],
-              ),
+                const SizedBox(height: 20),
+              ],
             ),
           ),
+          if (_error != null)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: GestureDetector(
+                onVerticalDragUpdate: (details) {
+                  if (details.delta.dy > 5) {
+                    _clearError();
+                  }
+                },
+                child: Container(
+                  color: Colors.red.withOpacity(0.95),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Lỗi tải dữ liệu",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _error!,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _clearError,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                              ),
+                              child: const Text(
+                                "Đóng",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _retryLoadData,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                              ),
+                              child: const Text(
+                                "Thử lại",
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: GiangVienBottomNav(currentIndex: _selectedIndex),

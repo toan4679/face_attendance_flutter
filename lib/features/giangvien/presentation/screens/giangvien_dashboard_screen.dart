@@ -1,4 +1,3 @@
-// lib/features/giangvien/presentation/screens/giangvien_dashboard_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../data/models/buoihoc_model.dart';
@@ -6,10 +5,11 @@ import '../../data/models/giangvien_model.dart';
 import '../controllers/giangvien_controller.dart';
 import '../widgets/giangvien_bottom_nav.dart';
 import '../widgets/gv_side_menu.dart';
-import 'diemdanh_qr_screen.dart';
+import 'diemdanh_screen.dart';
 import 'lichday_screen.dart';
 import 'quanlylop_screen.dart';
 import 'thongke_screen.dart';
+import '../../gv_routes.dart';
 
 class GiangVienDashboardScreen extends StatefulWidget {
   const GiangVienDashboardScreen({super.key});
@@ -29,9 +29,10 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
 
-    // Timer cập nhật trạng thái realtime
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -44,26 +45,30 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
       gvHienTai = controller.giangVien;
 
       if (gvHienTai != null) {
-        // ✅ gọi đúng API từ LopHocPhanRepository trong controller
         await controller.fetchLichDayHomNayCurrent();
 
-        setState(() {
-          lichDayHomNay = controller.lichDayHomNay;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            lichDayHomNay = controller.lichDayHomNay;
+            _isLoading = false;
+          });
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
       debugPrint("❌ Lỗi load data: $e");
     }
   }
-
 
   @override
   void dispose() {
@@ -71,7 +76,6 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
     super.dispose();
   }
 
-  // --- Hàm parse giờ ---
   List<DateTime> _parseTimeRange(String thoiGian, DateTime ngay) {
     try {
       final startParts = thoiGian.split('-')[0].split(':').map(int.parse).toList();
@@ -84,23 +88,30 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
     }
   }
 
-  // --- Xác định màu trạng thái buổi học ---
   Color _getStatusColor(BuoiHoc buoi) {
     final times = _parseTimeRange("${buoi.gioBatDau} - ${buoi.gioKetThuc}", buoi.ngayHoc);
     if (times.isEmpty) return Colors.grey;
     final now = DateTime.now();
     final start = times[0];
     final end = times[1];
-    if (now.isBefore(start)) return Colors.yellow; // sắp diễn ra
-    if (now.isAfter(end)) return Colors.red; // đã kết thúc
-    return Colors.green; // đang diễn ra
+    if (now.isBefore(start)) return Colors.orange;
+    if (now.isAfter(end)) return Colors.red;
+    return Colors.green;
   }
 
-  // --- APPBAR ---
   PreferredSizeWidget _buildHomeAppBar() {
     return AppBar(
-      backgroundColor: const Color(0xFF154B71),
+      backgroundColor: Colors.transparent,
       elevation: 0,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [const Color(0xFF1e3a5f), const Color(0xFF2d5a8c)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      ),
       automaticallyImplyLeading: false,
       title: Stack(
         alignment: Alignment.center,
@@ -110,9 +121,13 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
             child: Builder(
               builder: (context) => GestureDetector(
                 onTap: () => Scaffold.of(context).openDrawer(),
-                child: Image.asset(
-                  'assets/images/login_illustration.png',
-                  height: 36,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.menu, color: Colors.white),
                 ),
               ),
             ),
@@ -130,10 +145,13 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
           Align(
             alignment: Alignment.centerRight,
             child: IconButton(
-              icon: const Icon(Icons.notifications, color: Colors.white),
+              icon: const Icon(Icons.notifications_none, color: Colors.white),
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Không có thông báo mới")),
+                  const SnackBar(
+                    content: Text("Không có thông báo mới"),
+                    backgroundColor: Color(0xFF1e3a5f),
+                  ),
                 );
               },
             ),
@@ -143,7 +161,6 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
     );
   }
 
-  // --- Thông tin giảng viên ---
   Widget _buildTeacherInfo() {
     if (gvHienTai == null) return const SizedBox.shrink();
 
@@ -152,34 +169,63 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
         : "GV";
 
     return Container(
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF154B71),
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          colors: [const Color(0xFF1e3a5f), const Color(0xFF2d5a8c)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1e3a5f).withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.white,
-            child: Text(
-              initials,
-              style: const TextStyle(
-                color: Color(0xFF154B71),
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+            radius: 32,
+            backgroundColor: Colors.white.withOpacity(0.2),
+            child: CircleAvatar(
+              radius: 30,
+              backgroundColor: Colors.white,
+              child: Text(
+                initials,
+                style: const TextStyle(
+                  color: Color(0xFF1e3a5f),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              gvHienTai!.hoTen,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Xin chào,",
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  gvHienTai!.hoTen,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
         ],
@@ -187,9 +233,28 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
     );
   }
 
-  // --- Lịch dạy hôm nay ---
   Widget _buildTodaySchedule() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(13),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF1e3a5f),
+          ),
+        ),
+      );
+    }
 
     final today = DateTime.now();
     final lichHomNay = lichDayHomNay.where((b) =>
@@ -198,125 +263,205 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
         b.ngayHoc.day == today.day
     ).toList();
 
-    const double itemHeight = 77.0;
-    const double maxVisibleItems = 3;
-
     final formattedDate =
+        "Thứ ${['hai', 'ba', 'tư', 'năm', 'sáu', 'bảy', 'chủ nhật'][today.weekday - 1]}, "
         "${today.day.toString().padLeft(2, '0')}/"
         "${today.month.toString().padLeft(2, '0')}/"
         "${today.year}";
 
     return Container(
-      width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF154B71),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(13),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Text(
-                "Lịch dạy hôm nay",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1e3a5f).withAlpha(26),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.calendar_today_outlined,
+                  color: Color(0xFF1e3a5f),
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                formattedDate,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Lịch dạy hôm nay",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      formattedDate,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+          const SizedBox(height: 16),
+          lichHomNay.isEmpty
+              ? Center(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.event_busy_outlined,
+                  size: 40,
+                  color: Colors.grey[300],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Hôm nay không có lịch dạy",
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
             ),
-            padding: const EdgeInsets.all(10),
-            height: itemHeight * maxVisibleItems,
-            child: lichHomNay.isEmpty
-                ? const Center(child: Text("Hôm nay không có lịch dạy"))
-                : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: lichHomNay.map((buoi) {
-                  final statusColor = _getStatusColor(buoi);
-                  String statusText;
-                  if (statusColor == Colors.green) {
-                    statusText = "Đang diễn ra";
-                  } else if (statusColor == Colors.red) {
-                    statusText = "Đã kết thúc";
-                  } else if (statusColor == Colors.yellow) {
-                    statusText = "Sắp diễn ra";
-                  } else {
-                    statusText = "Chưa xác định";
-                  }
+          )
+              : Column(
+            children: List.generate(
+              lichHomNay.length,
+                  (index) {
+                final buoi = lichHomNay[index];
+                final statusColor = _getStatusColor(buoi);
+                String statusText;
+                if (statusColor == Colors.green) {
+                  statusText = "Đang diễn ra";
+                } else if (statusColor == Colors.red) {
+                  statusText = "Đã kết thúc";
+                } else {
+                  statusText = "Sắp diễn ra";
+                }
 
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7F7F7),
-                      borderRadius: BorderRadius.circular(8),
+                return Container(
+                  margin: EdgeInsets.only(
+                    bottom: index < lichHomNay.length - 1 ? 12 : 0,
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: statusColor,
+                        width: 4,
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
+                    color: statusColor.withAlpha(13),
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(8),
+                      bottomRight: Radius.circular(8),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
                               "${buoi.tenMon} - ${buoi.maSoLopHP}",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
+                                fontSize: 14,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            Row(
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withAlpha(51),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  width: 10,
-                                  height: 10,
-                                  margin:
-                                  const EdgeInsets.only(right: 6),
+                                  width: 8,
+                                  height: 8,
                                   decoration: BoxDecoration(
                                     color: statusColor,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
+                                const SizedBox(width: 4),
                                 Text(
                                   statusText,
                                   style: TextStyle(
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w600,
                                     color: statusColor,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text("${buoi.gioBatDau} - ${buoi.gioKetThuc}",
-                            style: const TextStyle(fontSize: 13)),
-                        const SizedBox(height: 4),
-                        Text("Phòng ${buoi.phongHoc}",
-                            style: const TextStyle(
-                                fontSize: 13, color: Colors.black54)),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "${buoi.gioBatDau} - ${buoi.gioKetThuc}",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Icon(
+                            Icons.room_outlined,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "Phòng ${buoi.phongHoc}",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -324,30 +469,35 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
     );
   }
 
-  // --- Grid chức năng ---
   Widget _buildFeatureGrid(BuildContext context) {
     final List<Map<String, dynamic>> features = [
       {
         "icon": Icons.qr_code_2,
         "title": "Điểm danh",
-        "buttonText": "Bắt đầu điểm danh",
+        "description": "Quét QR code",
+        "color": const Color(0xFFFF6B6B),
+        "route": GvRoutes.diemdanh,
       },
       {
         "icon": Icons.calendar_today_outlined,
         "title": "Lịch dạy",
-        "buttonText": "Xem lịch dạy",
-        "screen": LichDayScreen(giangVien: gvHienTai),
+        "description": "Xem lịch học",
+        "color": const Color(0xFF4ECDC4),
+        "route": GvRoutes.lichday,
       },
       {
         "icon": Icons.people_outline,
         "title": "Quản lý lớp",
-        "buttonText": "Chi tiết lớp học",
+        "description": "Chi tiết lớp",
+        "color": const Color(0xFFFFD93D),
+        "route": GvRoutes.quanlylop,
       },
       {
         "icon": Icons.bar_chart_outlined,
         "title": "Thống kê",
-        "buttonText": "Xem thống kê",
-        // "screen": ThongKeScreen(giangVienId: gvHienTai?.maGV ?? 0),
+        "description": "Xem báo cáo",
+        "color": const Color(0xFF6BCB77),
+        "route": GvRoutes.thongke,
       },
     ];
 
@@ -359,56 +509,90 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.25,
+        childAspectRatio: 1.0,
       ),
       itemBuilder: (context, index) {
         final item = features[index];
-        return _featureCard(
+        return _buildFeatureCard(
           context,
           item["icon"],
           item["title"],
-          item["buttonText"],
+          item["description"],
+          item["color"],
+          item["route"],
         );
       },
     );
   }
 
-  Widget _featureCard(
-      BuildContext context, IconData icon, String title, String buttonText) {
+  Widget _buildFeatureCard(
+      BuildContext context,
+      IconData icon,
+      String title,
+      String description,
+      Color color,
+      String route,
+      ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(2, 2)),
-        ],
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Icon(icon, color: const Color(0xFF154B71), size: 40),
-          Text(title,
-              textAlign: TextAlign.center,
-              style:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                // TODO: xử lý navigation
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF154B71),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: Text(buttonText,
-                  style: const TextStyle(color: Colors.white, fontSize: 14)),
-            ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(13),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            GvRoutes.navigate(context, route, arguments: {
+              "giangVienId": gvHienTai?.maGV.toString() ?? '',
+            });
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withAlpha(26),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -428,7 +612,7 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F0F0),
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: _buildHomeAppBar(),
       drawer: GVSideMenu(
         giangVienId: gvHienTai?.maGV.toString() ?? '',
@@ -441,8 +625,17 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTeacherInfo(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             _buildTodaySchedule(),
+            const SizedBox(height: 20),
+            Text(
+              "Chức năng chính",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
             const SizedBox(height: 12),
             _buildFeatureGrid(context),
           ],
