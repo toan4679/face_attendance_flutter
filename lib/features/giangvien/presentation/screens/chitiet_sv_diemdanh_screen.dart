@@ -86,7 +86,6 @@ class _BuoiDaDiemDanhScreenState extends State<BuoiDaDiemDanhScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Tính tổng số buổi và số buổi theo trạng thái
     int totalBuoi = widget.diemDanh.length;
     int coMat = widget.diemDanh
         .where((b) {
@@ -295,13 +294,13 @@ class _BuoiDaDiemDanhScreenState extends State<BuoiDaDiemDanhScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("${buoi.monHoc} - ${buoi.lop}",
+                            Text("${buoi.maLopHP} - ${buoi.thu}",
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15)),
                             const SizedBox(height: 4),
                             Text(
-                              "Ngày: ${DateFormat('dd/MM/yyyy').format(buoi.ngay)}  -  Giờ: ${DateFormat('HH:mm').format(buoi.gio)}  -  Phòng: ${buoi.phong}",
+                              "Ngày: ${DateFormat('dd/MM/yyyy').format(buoi.ngayHoc)}  -  Giờ: ${buoi.gioBatDau != null ? DateFormat('HH:mm').format(buoi.gioBatDau!) : '-'}  -  Phòng: ${buoi.phongHoc}",
                               style: const TextStyle(fontSize: 13),
                             ),
                           ],
@@ -317,9 +316,11 @@ class _BuoiDaDiemDanhScreenState extends State<BuoiDaDiemDanhScreen> {
                             value: status,
                             items: const [
                               DropdownMenuItem(
-                                  value: 'Đúng giờ', child: Text('Đúng giờ')),
+                                  value: 'Đúng giờ',
+                                  child: Text('Đúng giờ')),
                               DropdownMenuItem(
-                                  value: 'Đi muộn', child: Text('Đi muộn')),
+                                  value: 'Đi muộn',
+                                  child: Text('Đi muộn')),
                               DropdownMenuItem(
                                   value: 'Vắng', child: Text('Vắng')),
                             ],

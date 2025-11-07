@@ -39,13 +39,20 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
 
   Future<void> _loadData() async {
     try {
-      await GiangVienController().loadCurrentGiangVien();
-      gvHienTai = GiangVienController().giangVien;
+      final controller = GiangVienController();
+      await controller.loadCurrentGiangVien();
+      gvHienTai = controller.giangVien;
 
       if (gvHienTai != null) {
-        final lichList = await GiangVienController().getLichDayHomNay();
+        // ✅ gọi đúng API từ LopHocPhanRepository trong controller
+        await controller.fetchLichDayHomNayCurrent();
+
         setState(() {
-          lichDayHomNay = lichList;
+          lichDayHomNay = controller.lichDayHomNay;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
           _isLoading = false;
         });
       }
@@ -53,9 +60,10 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
       setState(() {
         _isLoading = false;
       });
-      print("❌ Lỗi load data: $e");
+      debugPrint("❌ Lỗi load data: $e");
     }
   }
+
 
   @override
   void dispose() {

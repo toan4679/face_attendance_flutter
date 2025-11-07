@@ -59,7 +59,7 @@ class GvRoutes {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => DiemDanhQRScreen(),
+              builder: (_) => DiemDanhQRScreen(buoiHoc: buoiHoc),
             ),
           );
         } else {

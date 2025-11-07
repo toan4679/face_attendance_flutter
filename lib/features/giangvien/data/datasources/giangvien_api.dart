@@ -26,14 +26,12 @@ class GiangVienApi {
     }
   }
 
-  /// ✅ Lấy thông tin giảng viên hiện tại dựa trên ID lưu trong token storage
+  /// ✅ Lấy thông tin giảng viên hiện tại
   Future<GiangVien> fetchCurrentGiangVien() async {
     final token = await TokenStorage.getToken();
     final id = await TokenStorage.getGiangVienId();
 
-    if (id == null) {
-      throw Exception("Không tìm thấy ID giảng viên trong bộ nhớ.");
-    }
+    if (id == null) throw Exception("Không tìm thấy ID giảng viên trong bộ nhớ.");
 
     final response = await http.get(
       Uri.parse("$baseUrl/$id"),
@@ -43,9 +41,6 @@ class GiangVienApi {
       },
     );
 
-    print("📡 [GET] $baseUrl/$id -> ${response.statusCode}");
-    print("📄 Body: ${response.body}");
-
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
       return GiangVien.fromJson(json['data']);
@@ -54,7 +49,7 @@ class GiangVienApi {
     }
   }
 
-  /// ✅ Cập nhật thông tin giảng viên bằng phương thức PUT
+  /// ✅ Cập nhật giảng viên
   Future<void> updateGiangVien(GiangVien giangVien) async {
     final token = await TokenStorage.getToken();
     final url = Uri.parse("$baseUrl/${giangVien.maGV}");
@@ -63,7 +58,7 @@ class GiangVienApi {
       url,
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded', // ⚙️ Bắt buộc để Laravel nhận body
+        'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': 'Bearer $token',
       },
       body: {
@@ -75,11 +70,7 @@ class GiangVienApi {
       },
     );
 
-    print("🛰️ [PUT] $url -> ${response.statusCode}");
-    print("📦 Body: ${response.body}");
-
     if (response.statusCode != 200) {
-      // Laravel có thể trả về JSON chứa message lỗi
       try {
         final error = jsonDecode(response.body);
         throw Exception("Không thể cập nhật giảng viên: ${error['message'] ?? response.statusCode}");
@@ -88,7 +79,8 @@ class GiangVienApi {
       }
     }
   }
-  /// ✅ Lấy lịch dạy hôm nay của giảng viên
+
+  /// ✅ Lấy lịch dạy hôm nay
   Future<List<BuoiHoc>> fetchLichDayHomNay(int maGV) async {
     final token = await TokenStorage.getToken();
     final url = Uri.parse("$baseUrl/$maGV/lichday/homnay");
@@ -98,9 +90,6 @@ class GiangVienApi {
       'Authorization': 'Bearer $token',
     });
 
-    print("📡 [GET] $url -> ${response.statusCode}");
-    print("📄 Body: ${response.body}");
-
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final List<dynamic> lichList = data['lichDayHomNay'] ?? [];
@@ -108,5 +97,74 @@ class GiangVienApi {
     } else {
       throw Exception('Không thể lấy lịch dạy hôm nay (${response.statusCode})');
     }
+  }
+
+  /// 🧾 Lấy danh sách sinh viên theo buổi học
+  Future<List<Map<String, dynamic>>> fetchDanhSachSinhVienTheoBuoi(int maBuoi) async {
+    final token = await TokenStorage.getToken();
+    final url = Uri.parse("$baseUrl/buoihoc/$maBuoi/sinhvien");
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data);
+    } else {
+      throw Exception('Không thể lấy danh sách sinh viên (${response.statusCode})');
+    }
+  }
+
+  /// ✅ Mở điểm danh
+  Future<void> moDiemDanh(int maBuoi) async {
+    final token = await TokenStorage.getToken();
+    final url = "$baseUrl/buoihoc/$maBuoi/qr"; // thống nhất route POST tạo QR
+    final response = await http.post(Uri.parse(url), headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+
+    if (response.statusCode != 200) throw Exception("Không thể mở điểm danh");
+  }
+
+  /// ✅ Đóng điểm danh
+  Future<void> dongDiemDanh(int maBuoi) async {
+    final token = await TokenStorage.getToken();
+    final url = "$baseUrl/buoihoc/$maBuoi/clear-qr"; // route POST xóa QR
+    final response = await http.post(Uri.parse(url), headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+
+    if (response.statusCode != 200) throw Exception("Không thể đóng điểm danh");
+  }
+
+  /// ✅ Tạo QR code cho buổi học
+  Future<void> generateQR(int maBuoi) async {
+    final token = await TokenStorage.getToken();
+    final url = "$baseUrl/buoihoc/$maBuoi/qr";
+    final response = await http.post(Uri.parse(url), headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+
+    if (response.statusCode != 200) throw Exception("Không thể tạo QR code");
+  }
+
+  /// ✅ Xóa QR code
+  Future<void> clearQR(int maBuoi) async {
+    final token = await TokenStorage.getToken();
+    final url = "$baseUrl/buoihoc/$maBuoi/clear-qr";
+    final response = await http.post(Uri.parse(url), headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $token',
+    });
+
+    if (response.statusCode != 200) throw Exception("Không thể xóa QR code");
   }
 }

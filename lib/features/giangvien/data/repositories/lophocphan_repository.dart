@@ -1,6 +1,6 @@
 import '../datasources/lophocphan_remote_datasource.dart';
 import '../models/lophocphan_model.dart';
-
+import '../models/buoihoc_model.dart';
 class LopHocPhanRepository {
   final LopHocPhanRemoteDataSource dataSource;
 
@@ -8,5 +8,8 @@ class LopHocPhanRepository {
 
   Future<List<LopHocPhan>> getLopHocPhan() async {
     return await dataSource.fetchLopHocPhan();
+  }
+  Future<List<BuoiHoc>> getLichDayHomNay(int maGV) async {
+    return await dataSource.getLichDayHomNay(maGV);
   }
 }

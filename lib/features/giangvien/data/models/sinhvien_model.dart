@@ -1,3 +1,4 @@
+// sinhvien_model.dart
 import 'chitiet_sv_diemdanh_model.dart';
 
 class SinhVien {
@@ -6,8 +7,8 @@ class SinhVien {
   final String lop;
   String trangThai;
   String? avatar;
-  int soBuoiDiemDanh; // số buổi đã điểm danh trong học kỳ
-  List<DiemDanhBuoiHocChiTiet> diemDanhChiTiet; // danh sách chi tiết các buổi điểm danh
+  int soBuoiDiemDanh;
+  List<DiemDanhBuoiHocChiTiet> diemDanhChiTiet;
 
   SinhVien({
     required this.ma,
@@ -20,54 +21,49 @@ class SinhVien {
   }) : diemDanhChiTiet = diemDanhChiTiet ?? [];
 
   String get avatarOrDefault => avatar ?? 'assets/images/toandeptrai.jpg';
+
+  factory SinhVien.fromJson(Map<String, dynamic> json) {
+    return SinhVien(
+      ma: json['ma'] ?? json['maSV'] ?? '',
+      ten: json['ten'] ?? json['tenSV'] ?? '',
+      lop: json['lop'] ?? '',
+      trangThai: json['trangThai'] ?? 'unknown',
+      avatar: json['avatar'],
+      soBuoiDiemDanh: json['soBuoiDiemDanh'] ?? 0,
+      diemDanhChiTiet: (json['diemDanhChiTiet'] as List?)
+          ?.map((e) => DiemDanhBuoiHocChiTiet.fromJson(e))
+          .toList() ??
+          [],
+    );
+  }
 }
 
-// =================== DỮ LIỆU MẪU SINH VIÊN ===================
-final List<SinhVien> danhSachSinhVienMau = [
-  SinhVien(
-    ma: "SV001",
-    ten: "Nguyễn Văn A",
-    lop: "CNTT1",
-    trangThai: "Đúng giờ",
-    soBuoiDiemDanh: 20,
-    diemDanhChiTiet: [
-      DiemDanhBuoiHocChiTiet(
-        monHoc: "Lập trình Flutter",
-        lop: "CNTT1",
-        ngay: DateTime(2025, 10, 1),
-        gio: DateTime(2025, 10, 1, 7, 5),
-        phong: "B203",
-        trangThai: "Đúng giờ",
-      ),
-      DiemDanhBuoiHocChiTiet(
-        monHoc: "Lập trình Flutter",
-        lop: "CNTT1",
-        ngay: DateTime(2025, 10, 3),
-        gio: DateTime(2025, 10, 3, 7, 10),
-        phong: "B203",
-        trangThai: "Muộn",
-      ),
-    ],
-  ),
-  SinhVien(
-    ma: "SV002",
-    ten: "Trần Thị B",
-    lop: "CNTT1",
-    trangThai: "Đúng giờ",
-    soBuoiDiemDanh: 15,
-  ),
-  SinhVien(
-    ma: "SV003",
-    ten: "Lê Văn C",
-    lop: "CNTT2",
-    trangThai: "Muộn",
-    soBuoiDiemDanh: 17,
-  ),
-  SinhVien(
-    ma: "SV004",
-    ten: "Phạm Thị D",
-    lop: "CNTT2",
-    trangThai: "Đúng giờ",
-    soBuoiDiemDanh: 20,
-  ),
-];
+// chitiet_sv_diemdanh_model.dart
+class DiemDanhBuoiHocChiTiet {
+  final String monHoc;
+  final String lop;
+  final DateTime ngay;
+  final DateTime gio;
+  final String phong;
+  String trangThai;
+
+  DiemDanhBuoiHocChiTiet({
+    required this.monHoc,
+    required this.lop,
+    required this.ngay,
+    required this.gio,
+    required this.phong,
+    required this.trangThai,
+  });
+
+  factory DiemDanhBuoiHocChiTiet.fromJson(Map<String, dynamic> json) {
+    return DiemDanhBuoiHocChiTiet(
+      monHoc: json['monHoc'] ?? '',
+      lop: json['lop'] ?? '',
+      ngay: DateTime.parse(json['ngay']),
+      gio: DateTime.parse(json['gio']),
+      phong: json['phong'] ?? '',
+      trangThai: json['trangThai'] ?? 'unknown',
+    );
+  }
+}

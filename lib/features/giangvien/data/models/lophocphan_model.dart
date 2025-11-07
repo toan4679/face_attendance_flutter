@@ -1,6 +1,6 @@
 import 'monhoc_model.dart';
 import 'giangvien_model.dart';
-import 'sinhvien_model.dart'; // mock sinh viên
+import 'sinhvien_model.dart'; // model SinhVien
 
 class LopHocPhan {
   final int maLopHP;
@@ -8,13 +8,14 @@ class LopHocPhan {
   final String hocKy;
   final String namHoc;
   final String thongTinLichHoc;
+  final DateTime ngayBatDau;
+  final DateTime ngayKetThuc;
   final MonHoc monHoc;
   final GiangVien giangVien;
 
-  // Mock dữ liệu điểm danh
+  final List<SinhVien> danhSachSinhVien; // từ database
   final int diemDanhHienTai;
   final int tongSoBuoi;
-  final List<SinhVien> danhSachSinhVien;
 
   LopHocPhan({
     required this.maLopHP,
@@ -22,11 +23,13 @@ class LopHocPhan {
     required this.hocKy,
     required this.namHoc,
     required this.thongTinLichHoc,
+    required this.ngayBatDau,
+    required this.ngayKetThuc,
     required this.monHoc,
     required this.giangVien,
+    required this.danhSachSinhVien,
     this.diemDanhHienTai = 0,
     this.tongSoBuoi = 0,
-    this.danhSachSinhVien = const [],
   });
 
   double get tiLeDiemDanh {
@@ -34,18 +37,24 @@ class LopHocPhan {
     return (diemDanhHienTai / tongSoBuoi).clamp(0.0, 1.0);
   }
 
-  factory LopHocPhan.fromJson(Map<String, dynamic> json) {
+  factory LopHocPhan.fromJson(Map<String, dynamic> json,
+      {required List<SinhVien> sinhVienList,
+        required MonHoc monHoc,
+        required GiangVien giangVien}) {
     return LopHocPhan(
       maLopHP: json['maLopHP'],
       maSoLopHP: json['maSoLopHP'],
       hocKy: json['hocKy'],
       namHoc: json['namHoc'],
-      thongTinLichHoc: json['thongTinLichHoc'],
-      monHoc: MonHoc.fromJson(json['mon_hoc']),
-      giangVien: GiangVien.fromJson(json['giang_vien']),
-      diemDanhHienTai: 10, // tạm mock
-      tongSoBuoi: 20, // tạm mock
-      danhSachSinhVien: danhSachSinhVienMau, // giữ mock sinh viên
+      thongTinLichHoc: json['thongTinLopHoc'],
+      ngayBatDau: DateTime.parse(json['ngayBatDau']),
+      ngayKetThuc: DateTime.parse(json['ngayKetThuc']),
+      monHoc: monHoc,
+      giangVien: giangVien,
+      danhSachSinhVien: sinhVienList,
+      diemDanhHienTai: json['diemDanhHienTai'] ?? 0,
+      tongSoBuoi: json['tongSoBuoi'] ?? 0,
     );
   }
+
 }
