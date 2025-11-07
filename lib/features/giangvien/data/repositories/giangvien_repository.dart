@@ -9,4 +9,13 @@ class GiangVienRepository {
   Future<GiangVien> getGiangVienById(int id) async {
     return await api.fetchGiangVienById(id);
   }
+  // ✅ Lấy giảng viên hiện tại (đọc ID từ token storage)
+  Future<GiangVien> getCurrentGiangVien() async {
+    return await api.fetchCurrentGiangVien();
+  }
+
+  // ✅ Cập nhật thông tin giảng viên
+  Future<void> updateGiangVien(GiangVien giangVien) async {
+    await api.updateGiangVien(giangVien);
+  }
 }

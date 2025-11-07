@@ -2,13 +2,15 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/giangvien_model.dart';
 import 'package:face_attendance_flutter/core/network/token_storage.dart';
+
 class GiangVienApi {
   final String baseUrl = "http://104.145.210.69/api/v1/giangvien";
 
+  /// ✅ Lấy thông tin giảng viên theo ID
   Future<GiangVien> fetchGiangVienById(int id) async {
     final token = await TokenStorage.getToken();
     final response = await http.get(
-      Uri.parse("$baseUrl/$id"), // <-- PHẢI có /$id
+      Uri.parse("$baseUrl/$id"),
       headers: {
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
@@ -19,9 +21,11 @@ class GiangVienApi {
       final json = jsonDecode(response.body);
       return GiangVien.fromJson(json['data']);
     } else {
-      throw Exception('Không thể tải thông tin giảng viên');
+      throw Exception('Không thể tải thông tin giảng viên (${response.statusCode})');
     }
   }
+
+  /// ✅ Lấy thông tin giảng viên hiện tại dựa trên ID lưu trong token storage
   Future<GiangVien> fetchCurrentGiangVien() async {
     final token = await TokenStorage.getToken();
     final id = await TokenStorage.getGiangVienId();
@@ -38,16 +42,49 @@ class GiangVienApi {
       },
     );
 
-    print("📡 GET $baseUrl/$id -> ${response.statusCode}");
+    print("📡 [GET] $baseUrl/$id -> ${response.statusCode}");
     print("📄 Body: ${response.body}");
-    print("📡 Token: $token");
-    print("📡 ID: $id");
+
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
       return GiangVien.fromJson(json['data']);
     } else {
-      throw Exception(
-          "Không thể tải dữ liệu giảng viên (${response.statusCode})");
+      throw Exception("Không thể tải dữ liệu giảng viên (${response.statusCode})");
+    }
+  }
+
+  /// ✅ Cập nhật thông tin giảng viên bằng phương thức PUT
+  Future<void> updateGiangVien(GiangVien giangVien) async {
+    final token = await TokenStorage.getToken();
+    final url = Uri.parse("$baseUrl/${giangVien.maGV}");
+
+    final response = await http.put(
+      url,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded', // ⚙️ Bắt buộc để Laravel nhận body
+        'Authorization': 'Bearer $token',
+      },
+      body: {
+        'hoTen': giangVien.hoTen,
+        'email': giangVien.email,
+        'soDienThoai': giangVien.soDienThoai ?? '',
+        'hocVi': giangVien.hocVi ?? '',
+        'moTa': giangVien.moTa ?? '',
+      },
+    );
+
+    print("🛰️ [PUT] $url -> ${response.statusCode}");
+    print("📦 Body: ${response.body}");
+
+    if (response.statusCode != 200) {
+      // Laravel có thể trả về JSON chứa message lỗi
+      try {
+        final error = jsonDecode(response.body);
+        throw Exception("Không thể cập nhật giảng viên: ${error['message'] ?? response.statusCode}");
+      } catch (_) {
+        throw Exception("Không thể cập nhật giảng viên (${response.statusCode})");
+      }
     }
   }
 }

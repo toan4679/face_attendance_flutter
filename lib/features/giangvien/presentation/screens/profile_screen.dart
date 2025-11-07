@@ -1,4 +1,3 @@
-// lib/features/giangvien/presentation/screens/profile_screen.dart
 import 'package:flutter/material.dart';
 import '../../data/models/giangvien_model.dart';
 import '../controllers/giangvien_controller.dart';
@@ -29,26 +28,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final id = await TokenStorage.getGiangVienId();
     if (id != null) return;
 
-    // Fallback: gọi lophocphan để lấy giangVien.maGV rồi lưu
     try {
       await LopHocPhanRemoteDataSource().fetchLopHocPhan();
-      // sau call này, saveGiangVienId đã chạy (xem mục #2)
-    } catch (_) {
-      // bỏ qua, để màn hình hiển thị lỗi phía dưới nếu vẫn không có id
-    }
+    } catch (_) {}
   }
 
   Future<void> _loadGiangVien() async {
     try {
       await _ensureGiangVienId();
-      await _controller.loadCurrentGiangVien(); // đọc id từ storage và gọi /giangvien/{id}
+      await _controller.loadCurrentGiangVien();
       setState(() {
         giangVien = _controller.giangVien;
         isLoading = false;
       });
     } catch (e) {
       setState(() => isLoading = false);
-      // có thể show SnackBar nếu muốn
     }
   }
 
@@ -58,10 +52,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (giangVien == null) {
-      return const Scaffold(body: Center(child: Text("Không thể tải thông tin giảng viên.")));
+      return const Scaffold(
+        body: Center(child: Text("Không thể tải thông tin giảng viên.")),
+      );
     }
 
-    // ⬇️ GIỮ NGUYÊN GIAO DIỆN CŨ CỦA BẠN
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -87,6 +82,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: const TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 20),
+
+            // ===== Thông tin cá nhân =====
             ListTile(
               leading: const Icon(Icons.email),
               title: Text(giangVien!.email),
@@ -96,15 +93,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 leading: const Icon(Icons.phone),
                 title: Text(giangVien!.soDienThoai!),
               ),
+
+            // ===== Thông tin khoa =====
+            if (giangVien!.khoa != null) ...[
+              ListTile(
+                leading: const Icon(Icons.account_balance),
+                title: Text(giangVien!.khoa!.tenKhoa),
+                subtitle: Text("Mã khoa: ${giangVien!.khoa!.maKhoa}"),
+              ),
+              if (giangVien!.khoa!.moTa != null &&
+                  giangVien!.khoa!.moTa!.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: const Text("Mô tả khoa"),
+                  subtitle: Text(giangVien!.khoa!.moTa!),
+                ),
+            ],
+
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => EditProfileForm(giangVien: giangVien!)),
+                  MaterialPageRoute(
+                    builder: (_) => EditProfileForm(giangVien: giangVien!),
+                  ),
                 );
               },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF154B71)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF154B71),
+              ),
               child: const Text("Chỉnh sửa hồ sơ"),
             ),
           ],
