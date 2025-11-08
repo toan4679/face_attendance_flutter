@@ -18,6 +18,8 @@ class ThongTinLopScreen extends StatefulWidget {
 class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
   int _selectedIndex = 3;
   String _searchQuery = '';
+  GiangVien? gvHienTai;
+  final _controller = GiangVienController();
 
   void _onItemTapped(int index) {
     setState(() {
@@ -26,15 +28,34 @@ class _ThongTinLopScreenState extends State<ThongTinLopScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadGiangVien();
+  }
+
+  Future<void> _loadGiangVien() async {
+    try {
+      await _controller.loadCurrentGiangVien();
+      setState(() {
+        gvHienTai = _controller.currentGiangVien;
+      });
+    } catch (e) {
+      debugPrint("❌ Lỗi load giảng viên: $e");
+      setState(() {
+        gvHienTai = null;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final lop = widget.lop;
-    final gv = GiangVienController().giangVien; // ✅ Lấy từ controller
+    final gv = gvHienTai; // Giảng viên hiện tại từ controller
     final sinhVienCuaLop = lop.danhSachSinhVien;
 
     // --- Lọc danh sách sinh viên ---
     final sinhVienLoc = sinhVienCuaLop
-        .where((sv) =>
-        sv.ten.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .where((sv) => sv.ten.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
 
     return Scaffold(

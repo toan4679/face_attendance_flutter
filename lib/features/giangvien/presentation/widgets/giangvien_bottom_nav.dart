@@ -26,12 +26,13 @@ class _GiangVienBottomNavState extends State<GiangVienBottomNav> {
   void _handleTap(int index) {
     widget.onTap?.call(index);
 
-    final GiangVien? gv = GiangVienController().giangVien;
+    // Lấy giảng viên hiện tại từ controller
+    final GiangVien? gv = GiangVienController().currentGiangVien;
 
     Widget nextScreen;
     switch (index) {
       case 0:
-        nextScreen = GiangVienDashboardScreen();
+        nextScreen = const GiangVienDashboardScreen();
         break;
       case 1:
         nextScreen = LichDayScreen(giangVien: gv);
@@ -46,7 +47,7 @@ class _GiangVienBottomNavState extends State<GiangVienBottomNav> {
         nextScreen = const ProfileScreen();
         break;
       default:
-        nextScreen = GiangVienDashboardScreen();
+        nextScreen = const GiangVienDashboardScreen();
     }
 
     Navigator.pushReplacement(

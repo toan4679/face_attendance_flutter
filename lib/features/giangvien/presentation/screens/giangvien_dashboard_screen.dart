@@ -41,12 +41,11 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
   Future<void> _loadData() async {
     try {
       final controller = GiangVienController();
-      await controller.loadCurrentGiangVien();
-      gvHienTai = controller.giangVien;
+      await controller.loadCurrentGiangVien(); // load giảng viên hiện tại
+      gvHienTai = controller.currentGiangVien; // dùng currentGiangVien
 
       if (gvHienTai != null) {
-        await controller.fetchLichDayHomNayCurrent();
-
+        await controller.fetchLichDayHomNayCurrent(); // load lich dạy hôm nay
         if (mounted) {
           setState(() {
             lichDayHomNay = controller.lichDayHomNay;
@@ -69,6 +68,7 @@ class _GiangVienDashboardScreenState extends State<GiangVienDashboardScreen> {
       debugPrint("❌ Lỗi load data: $e");
     }
   }
+
 
   @override
   void dispose() {

@@ -10,6 +10,7 @@ import 'presentation/screens/doi_mat_khau_screen.dart';
 import 'data/models/buoihoc_model.dart';
 import 'presentation/controllers/giangvien_controller.dart';
 import 'data/models/giangvien_model.dart';
+
 class GvRoutes {
   static const String dashboard = '/giangvien/dashboard';
   static const String diemdanh = '/giangvien/diemdanh';
@@ -21,37 +22,32 @@ class GvRoutes {
   static const String thongke = '/giangvien/thongke';
   static const String doiMatKhau = '/giangvien/doi_mat_khau';
 
+  // Các route tĩnh
   static Map<String, WidgetBuilder> staticRoutes = {
-    dashboard: (_) {
-      final gv = GiangVienController().giangVien;
-      return GiangVienDashboardScreen();
-    },
-    diemdanh: (_) {
-      final gv = GiangVienController().giangVien;
-      return DiemDanhScreen();
-    },
+    dashboard: (_) => const GiangVienDashboardScreen(),
+    diemdanh: (_) => const DiemDanhScreen(),
     lichday: (_) {
-      final gv = GiangVienController().giangVien;
+      final GiangVien? gv = GiangVienController().giangVien;
       return LichDayScreen(giangVien: gv);
     },
     quanlylop: (_) {
-      final gv = GiangVienController().giangVien;
+      final GiangVien? gv = GiangVienController().giangVien;
       return QuanLyLopScreen(giangVien: gv);
     },
     profile: (_) => const ProfileScreen(),
     thongke: (_) {
-      final gv = GiangVienController().giangVien;
+      final GiangVien? gv = GiangVienController().giangVien;
       return ThongKeScreen(giangVien: gv);
     },
     doiMatKhau: (_) {
-      final gv = GiangVienController().giangVien;
+      final GiangVien? gv = GiangVienController().giangVien;
       return DoiMatKhauScreen(giangVien: gv);
     },
   };
 
+  // Hàm điều hướng
   static void navigate(BuildContext context, String route,
       {Map<String, dynamic>? arguments}) {
-    // Dùng postFrameCallback để chắc Drawer đã đóng
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (route == diemdanhQR) {
         final BuoiHoc? buoiHoc = arguments?['buoiHoc'];
@@ -68,11 +64,11 @@ class GvRoutes {
           );
         }
       } else if (route == doiMatKhau) {
-        final giangVienId = arguments?['giangVienId'] ?? 'GV001';
+        final GiangVien? gv = arguments?['giangVien'];
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => DoiMatKhauScreen(giangVien: giangVienId),
+            builder: (_) => DoiMatKhauScreen(giangVien: gv),
           ),
         );
       } else if (staticRoutes.containsKey(route)) {

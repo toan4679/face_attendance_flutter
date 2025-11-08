@@ -21,41 +21,45 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String searchText = '';
   bool loading = true;
-  String? _error; // Add local error state to track error messages
+  String? _error;
   List<LopHocPhan> dsLop = [];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
   }
 
   Future<void> _loadData() async {
+    if (widget.giangVien?.maGV == null) {
+      setState(() {
+        loading = false;
+        _error = "Giảng viên không hợp lệ";
+      });
+      return;
+    }
+
     try {
       final repo = LopHocPhanRepository(LopHocPhanRemoteDataSource());
-      final data = await repo.getLopHocPhan();
+      final data = await repo.getLopHocPhan(widget.giangVien!.maGV);
       if (mounted) {
         setState(() {
           dsLop = data;
           loading = false;
-          _error = null; // Clear error when data loads successfully
+          _error = null;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           loading = false;
-          _error = e.toString(); // Store error in local state instead of just showing SnackBar
+          _error = e.toString();
         });
       }
     }
   }
 
-  void _clearError() {
-    setState(() => _error = null);
-  }
+  void _clearError() => setState(() => _error = null);
 
   void _retryLoadData() {
     setState(() => loading = true);
@@ -107,9 +111,7 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
       body: Stack(
         children: [
           loading
-              ? const Center(
-            child: CircularProgressIndicator(color: Color(0xFF154B71)),
-          )
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF154B71)))
               : SingleChildScrollView(
             child: Column(
               children: [
@@ -171,9 +173,7 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
                           suffixIcon: searchText.isNotEmpty
                               ? IconButton(
                             icon: const Icon(Icons.clear, color: Colors.grey),
-                            onPressed: () {
-                              setState(() => searchText = '');
-                            },
+                            onPressed: () => setState(() => searchText = ''),
                           )
                               : null,
                           border: OutlineInputBorder(
@@ -385,9 +385,7 @@ class _QuanLyLopScreenState extends State<QuanLyLopScreen> {
               right: 0,
               child: GestureDetector(
                 onVerticalDragUpdate: (details) {
-                  if (details.delta.dy > 5) {
-                    _clearError();
-                  }
+                  if (details.delta.dy > 5) _clearError();
                 },
                 child: Container(
                   color: Colors.red.withOpacity(0.95),

@@ -1,16 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../../../../core/network/token_storage.dart'; // ✅ thêm dòng này
+import '../../../../core/network/token_storage.dart';
 
 class AuthService {
   final Dio _dio = Dio(
     BaseOptions(baseUrl: dotenv.env['API_BASE_URL'] ?? ''),
   );
 
-  /// 🟢 Đăng nhập
+  /// Đăng nhập
   Future<Map<String, dynamic>> login(String email, String password, String loai) async {
     try {
-      final res = await _dio.post('/v1/auth/login', data: {
+      final res = await _dio.post('/auth/login', data: {
         'email': email,
         'matKhau': password,
         'loai': loai,
@@ -18,44 +18,37 @@ class AuthService {
 
       final data = res.data;
       final token = data['token'] ?? data['access_token'];
+      final user = data['user'] ?? {};
 
-      // ✅ Lưu token
+      // Lưu token
       if (token != null && token.toString().isNotEmpty) {
-        await TokenStorage.saveToken(token);
+        await TokenStorage.saveToken(token.toString());
+      }
+
+      // Lưu ID người dùng (giảng viên/sinh viên)
+      if (user['id'] != null) {
+        await TokenStorage.saveUserId(user['id'].toString());
+      }
+
+      // Lưu tên và email
+      if (user['hoTen'] != null) {
+        await TokenStorage.saveUserInfo(
+          user['hoTen'].toString(),
+          user['email']?.toString() ?? '',
+        );
+      }
+
+      // Lưu vai trò
+      if (user['vaiTro'] != null) {
+        await TokenStorage.saveUserRole(user['vaiTro'].toString());
       }
 
       return data;
     } catch (e) {
-      return {'error': 'Đăng nhập thất bại'};
+      return {
+        'error': 'Đăng nhập thất bại',
+        'detail': e.toString(),
+      };
     }
-  }
-
-  /// 🟡 Đăng ký (nếu backend có)
-  Future<Map<String, dynamic>> register(String email, String password) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return {'message': 'Đăng ký thành công'};
-  }
-}
-
-class AuthUser {
-  final int id;
-  final String hoTen;
-  final String vaiTro;
-  final String token;
-
-  AuthUser({
-    required this.id,
-    required this.hoTen,
-    required this.vaiTro,
-    required this.token,
-  });
-
-  factory AuthUser.fromJson(Map<String, dynamic> json) {
-    return AuthUser(
-      id: json['user']['id'],
-      hoTen: json['user']['hoTen'] ?? '',
-      vaiTro: json['user']['vaiTro'] ?? '',
-      token: json['token'] ?? '',
-    );
   }
 }

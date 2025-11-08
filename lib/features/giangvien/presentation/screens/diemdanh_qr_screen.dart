@@ -8,7 +8,6 @@ import '../../presentation/controllers/giangvien_controller.dart';
 
 class DiemDanhQRScreen extends StatefulWidget {
   final BuoiHoc buoiHoc;
-
   const DiemDanhQRScreen({super.key, required this.buoiHoc});
 
   @override
@@ -16,20 +15,19 @@ class DiemDanhQRScreen extends StatefulWidget {
 }
 
 class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
+  final GiangVienController _controller = GiangVienController();
+
   bool diemDanhDangMo = false;
   bool hienThiDanhSach = false;
-  bool showQR = true;
-  List<SinhVien> danhSachSinhVien = [];
   Timer? _timer;
-
-  final GiangVienController _controller = GiangVienController();
+  List<SinhVien> danhSachSinhVien = [];
 
   @override
   void initState() {
     super.initState();
     _loadDanhSachSinhVien();
 
-    // Cập nhật danh sách sinh viên định kỳ nếu điểm danh đang mở
+    // Load danh sách sinh viên định kỳ nếu điểm danh đang mở
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (diemDanhDangMo) _loadDanhSachSinhVien();
     });
@@ -41,11 +39,11 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
     super.dispose();
   }
 
+  // Load danh sách sinh viên theo buổi học
   Future<void> _loadDanhSachSinhVien() async {
     try {
       final dsMap = await _controller.getDanhSachSinhVien(widget.buoiHoc.maBuoi);
       final ds = dsMap.map((e) => SinhVien.fromJson(e)).toList();
-
       setState(() {
         danhSachSinhVien = ds;
         hienThiDanhSach = true;
@@ -57,17 +55,13 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
     }
   }
 
+  // Bắt đầu điểm danh, tạo QR mới từ server
   Future<void> _batDauDiemDanh() async {
     try {
-      // gọi API tạo QR code
-      await _controller.generateQR(widget.buoiHoc.maBuoi);
-
+      await _controller.startDiemDanh(widget.buoiHoc.maBuoi);
       setState(() {
         diemDanhDangMo = true;
-        hienThiDanhSach = true;
-        showQR = true;
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("✅ Đã mở điểm danh, sinh viên có thể quét mã QR")),
       );
@@ -78,16 +72,14 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
     }
   }
 
+  // Kết thúc điểm danh, xóa QR
   Future<void> _ketThucDiemDanh() async {
     try {
-      // gọi API xóa QR
-      await _controller.clearQR(widget.buoiHoc.maBuoi);
-
+      await _controller.endDiemDanh(widget.buoiHoc.maBuoi);
+      _timer?.cancel(); // hủy timer khi kết thúc
       setState(() {
         diemDanhDangMo = false;
-        showQR = false;
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("📘 Đã kết thúc điểm danh")),
       );
@@ -101,6 +93,7 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
   @override
   Widget build(BuildContext context) {
     final buoiHoc = widget.buoiHoc;
+    final qrData = _controller.qrCode;
     final tongSV = danhSachSinhVien.length;
     final diDungGio = danhSachSinhVien.where((sv) => sv.trangThai == "Đúng giờ").length;
     final diMuon = danhSachSinhVien.where((sv) => sv.trangThai == "Đi muộn").length;
@@ -124,7 +117,7 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Thông tin lớp học
+          // Thông tin buổi học
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -132,21 +125,17 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Mã buổi học: ${buoiHoc.maBuoi}",
-                    style: const TextStyle(color: Colors.white, fontSize: 15)),
+                Text("Mã buổi học: ${buoiHoc.maBuoi}", style: const TextStyle(color: Colors.white, fontSize: 15)),
                 const SizedBox(height: 4),
-                Text("Môn: ${buoiHoc.tenMon} | Phòng: ${buoiHoc.phongHoc}",
-                    style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                Text("Môn: ${buoiHoc.tenMon} | Phòng: ${buoiHoc.phongHoc}", style: const TextStyle(color: Colors.white70, fontSize: 13)),
                 const SizedBox(height: 4),
-                Text("Thời gian: ${buoiHoc.thoiGian}",
-                    style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                Text("Thời gian: ${buoiHoc.thoiGian}", style: const TextStyle(color: Colors.white70, fontSize: 13)),
               ],
             ),
           ),
           const SizedBox(height: 16),
-
           // QR Code
-          if (showQR)
+          if (diemDanhDangMo && qrData != null)
             Center(
               child: Column(
                 children: [
@@ -156,7 +145,7 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: QrImageView(
-                      data: "http://104.145.210.69/api/v1/giangvien/buoihoc/${buoiHoc.maBuoi}/qr",
+                      data: qrData,
                       version: QrVersions.auto,
                       size: 200,
                       backgroundColor: Colors.white,
@@ -165,16 +154,13 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    diemDanhDangMo
-                        ? "Sinh viên quét mã QR để điểm danh"
-                        : "QR chưa kích hoạt, nhấn 'Bắt đầu điểm danh'",
+                    "Sinh viên quét mã QR để điểm danh",
                     style: const TextStyle(color: Colors.black54, fontSize: 13),
                   ),
                   const SizedBox(height: 20),
                 ],
               ),
             ),
-
           // Danh sách sinh viên
           if (hienThiDanhSach)
             Expanded(
@@ -196,7 +182,6 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
                     } else {
                       statusColor = Colors.red;
                     }
-
                     return Container(
                       margin: const EdgeInsets.symmetric(vertical: 6),
                       padding: const EdgeInsets.all(12),
@@ -224,23 +209,15 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(sv.ten,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14)),
-                                  Text(sv.ma,
-                                      style: const TextStyle(
-                                          fontSize: 12, color: Colors.black54)),
+                                  Text(sv.ten, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                  Text(sv.ma, style: const TextStyle(fontSize: 12, color: Colors.black54)),
                                 ],
                               ),
                             ],
                           ),
                           Text(
                             sv.trangThai,
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: statusColor,
-                                fontWeight: FontWeight.w600),
+                            style: TextStyle(fontSize: 13, color: statusColor, fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -249,7 +226,6 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
                 ),
               ),
             ),
-
           // Nút hành động
           Container(
             padding: const EdgeInsets.all(16),
@@ -265,10 +241,7 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
                       ),
                     ),
                     onPressed: _batDauDiemDanh,
-                    child: const Text(
-                      "BẮT ĐẦU ĐIỂM DANH",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    child: const Text("BẮT ĐẦU ĐIỂM DANH", style: TextStyle(color: Colors.white)),
                   ),
                 if (diemDanhDangMo)
                   ElevatedButton(
@@ -283,9 +256,7 @@ class _DiemDanhQRScreenState extends State<DiemDanhQRScreen> {
                     onPressed: _ketThucDiemDanh,
                     child: const Text(
                       "KẾT THÚC ĐIỂM DANH",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFB71C1C)),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFB71C1C)),
                     ),
                   ),
               ],

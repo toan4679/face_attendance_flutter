@@ -3,8 +3,6 @@ import '../../data/models/giangvien_model.dart';
 import '../controllers/giangvien_controller.dart';
 import '../widgets/giangvien_bottom_nav.dart';
 import 'edit_profile_form.dart';
-import 'package:face_attendance_flutter/core/network/token_storage.dart';
-import '../../data/datasources/lophocphan_remote_datasource.dart'; // để fallback lấy id
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -24,24 +22,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadGiangVien();
   }
 
-  Future<void> _ensureGiangVienId() async {
-    final id = await TokenStorage.getGiangVienId();
-    if (id != null) return;
-
-    try {
-      await LopHocPhanRemoteDataSource().fetchLopHocPhan();
-    } catch (_) {}
-  }
-
   Future<void> _loadGiangVien() async {
+    setState(() => isLoading = true);
     try {
-      await _ensureGiangVienId();
-      await _controller.loadCurrentGiangVien();
-      setState(() {
-        giangVien = _controller.giangVien;
-        isLoading = false;
-      });
+      await _controller.loadCurrentGiangVien(); // load từ API
+      giangVien = _controller.currentGiangVien;   // ✅ sửa ở đây
     } catch (e) {
+      print("❌ Lỗi load data: $e");
+      giangVien = null;
+    } finally {
       setState(() => isLoading = false);
     }
   }
@@ -49,11 +38,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    if (giangVien == null) {
       return const Scaffold(
-        body: Center(child: Text("Không thể tải thông tin giảng viên.")),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (giangVien == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text("Không thể tải thông tin giảng viên."),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadGiangVien,
+                child: const Text("Thử lại"),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -74,7 +78,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 16),
             Text(
               giangVien!.hoTen,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
             Text(
@@ -116,7 +121,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => EditProfileForm(giangVien: giangVien!),
+                    builder: (_) =>
+                        EditProfileForm(giangVien: giangVien!),
                   ),
                 );
               },

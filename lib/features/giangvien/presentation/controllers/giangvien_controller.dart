@@ -7,46 +7,44 @@ import '../../data/repositories/lophocphan_repository.dart';
 import '../../data/datasources/lophocphan_remote_datasource.dart';
 
 class GiangVienController with ChangeNotifier {
-  // 🔹 Singleton
   static final GiangVienController _instance = GiangVienController._internal();
   factory GiangVienController() => _instance;
 
-  // 🔹 Constructor duy nhất
   GiangVienController._internal() {
     lopHocPhanRepo = LopHocPhanRepository(LopHocPhanRemoteDataSource());
   }
 
-  // 🔹 Biến nội bộ
-  final GiangVienApi _api = GiangVienApi();
   final GiangVienRepository _repo = GiangVienRepository(GiangVienApi());
   late final LopHocPhanRepository lopHocPhanRepo;
 
+  // ===============================
+  // Dữ liệu trạng thái
+  // ===============================
   List<BuoiHoc> lichDayHomNay = [];
   bool loadingLichDay = false;
   String? errorLichDay;
+
   GiangVien? currentGiangVien;
+  GiangVien? get giangVien => currentGiangVien; // ✅ Getter để trang chủ dùng
+
+  String? qrCode; // QR code thật từ server
+  bool loadingQR = false;
+  String? errorQR;
 
   // ===============================
-  // 🟦 Lấy thông tin giảng viên hiện tại
+  // Giảng viên hiện tại
   // ===============================
   Future<void> loadCurrentGiangVien() async {
-    currentGiangVien = await _api.fetchCurrentGiangVien();
-    notifyListeners();
-  }
-
-  GiangVien? get giangVien => currentGiangVien;
-
-  // ===============================
-  // 🟩 Cập nhật thông tin giảng viên
-  // ===============================
-  Future<void> updateGiangVien(GiangVien updatedGV) async {
-    await _repo.updateGiangVien(updatedGV);
-    currentGiangVien = updatedGV;
-    notifyListeners();
+    try {
+      currentGiangVien = await _repo.getCurrentGiangVien();
+      notifyListeners();
+    } catch (e) {
+      debugPrint("❌ Lỗi load giảng viên: $e");
+    }
   }
 
   // ===============================
-  // 🟪 Lấy lịch dạy hôm nay của giảng viên
+  // Lịch dạy hôm nay
   // ===============================
   Future<void> fetchLichDayHomNay(int maGV) async {
     try {
@@ -63,9 +61,6 @@ class GiangVienController with ChangeNotifier {
     }
   }
 
-  // ===============================
-  // 🟨 Lấy lịch dạy dựa trên currentGiangVien
-  // ===============================
   Future<void> fetchLichDayHomNayCurrent() async {
     if (currentGiangVien == null) {
       errorLichDay = "Chưa load thông tin giảng viên";
@@ -75,23 +70,18 @@ class GiangVienController with ChangeNotifier {
     await fetchLichDayHomNay(currentGiangVien!.maGV);
   }
 
-// 🧾 Lấy danh sách sinh viên của 1 buổi học
+  // ===============================
+  // Danh sách sinh viên
+  // ===============================
   Future<List<Map<String, dynamic>>> getDanhSachSinhVien(int maBuoi) async {
     try {
       final response = await _repo.getDanhSachSinhVienTheoBuoi(maBuoi);
-
-      // Nếu response là List<dynamic>, ép kiểu về List<Map<String, dynamic>>
       if (response is List) {
         return response.map<Map<String, dynamic>>((e) {
-          if (e is Map<String, dynamic>) {
-            return e;
-          } else {
-            return {};
-          }
+          if (e is Map<String, dynamic>) return e;
+          return {};
         }).toList();
       }
-
-      // Trường hợp khác trả về rỗng
       return [];
     } catch (e) {
       debugPrint("❌ Lỗi khi lấy danh sách sinh viên: $e");
@@ -99,29 +89,46 @@ class GiangVienController with ChangeNotifier {
     }
   }
 
-// ===============================
-// 🟪 Tạo QR code cho buổi học
-// ===============================
-  Future<void> generateQR(int maBuoi) async {
+  // ===============================
+  // Bắt đầu điểm danh → tạo QR
+  // ===============================
+  Future<void> startDiemDanh(int maBuoi) async {
+    loadingQR = true;
+    errorQR = null;
+    notifyListeners();
     try {
-      await _repo.generateQR(maBuoi);
-      debugPrint("✅ QR code đã được tạo cho buổi $maBuoi");
+      qrCode = await _repo.generateQR(maBuoi);
+      debugPrint("✅ QR code đã được tạo: $qrCode");
     } catch (e) {
-      debugPrint("❌ Lỗi tạo QR code: $e");
-      rethrow;
+      errorQR = e.toString();
+      qrCode = null;
+      debugPrint("❌ Lỗi tạo QR code: $errorQR");
+    } finally {
+      loadingQR = false;
+      notifyListeners();
     }
   }
 
-// ===============================
-// 🟥 Xóa QR code
-// ===============================
-  Future<void> clearQR(int maBuoi) async {
+  // ===============================
+  // Kết thúc điểm danh → xóa QR
+  // ===============================
+  Future<void> endDiemDanh(int maBuoi) async {
     try {
       await _repo.clearQR(maBuoi);
+      qrCode = null;
+      notifyListeners();
       debugPrint("📘 QR code đã bị xóa cho buổi $maBuoi");
     } catch (e) {
       debugPrint("❌ Lỗi xóa QR code: $e");
-      rethrow;
     }
+  }
+
+  // ===============================
+  // Cập nhật giảng viên
+  // ===============================
+  Future<void> updateGiangVien(GiangVien updatedGV) async {
+    await _repo.updateGiangVien(updatedGV);
+    currentGiangVien = updatedGV;
+    notifyListeners();
   }
 }

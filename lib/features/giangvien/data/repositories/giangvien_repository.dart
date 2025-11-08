@@ -4,71 +4,22 @@ import '../models/giangvien_model.dart';
 
 class GiangVienRepository {
   final GiangVienApi api;
-
   GiangVienRepository(this.api);
 
-  // ===============================
-  // Lấy giảng viên theo ID
-  // ===============================
-  Future<GiangVien> getGiangVienById(int id) async {
-    return await api.fetchGiangVienById(id);
-  }
+  Future<GiangVien> getGiangVienById(int id) => api.fetchGiangVienById(id);
 
-  // ===============================
-  // Lấy giảng viên hiện tại (token)
-  // ===============================
-  Future<GiangVien> getCurrentGiangVien() async {
-    return await api.fetchCurrentGiangVien();
-  }
+  Future<GiangVien> getCurrentGiangVien() => api.fetchCurrentGiangVien();
 
-  // ===============================
-  // Cập nhật thông tin giảng viên
-  // ===============================
-  Future<void> updateGiangVien(GiangVien giangVien) async {
-    await api.updateGiangVien(giangVien);
-  }
+  Future<void> updateGiangVien(GiangVien gv) => api.updateGiangVien(gv);
 
-  // ===============================
-  // Lấy lịch dạy hôm nay
-  // ===============================
-  Future<List<BuoiHoc>> getLichDayHomNay(int maGV) async {
-    return await api.fetchLichDayHomNay(maGV);
-  }
+  Future<List<BuoiHoc>> getLichDayHomNay(int maGV) => api.fetchLichDayHomNay(maGV);
 
-  // ===============================
-  // Lấy danh sách sinh viên theo buổi học
-  // ===============================
-  Future<List<Map<String, dynamic>>> getDanhSachSinhVienTheoBuoi(int maBuoi) async {
-    return await api.fetchDanhSachSinhVienTheoBuoi(maBuoi);
-  }
+  Future<List<Map<String, dynamic>>> getDanhSachSinhVienTheoBuoi(int maBuoi) =>
+      api.fetchDanhSachSinhVienTheoBuoi(maBuoi);
 
-  // ===============================
-  // Mở điểm danh
-  // ===============================
-  Future<void> moDiemDanh(int maBuoi) async {
-    await api.moDiemDanh(maBuoi);
-    await generateQR(maBuoi); // tạo QR khi mở điểm danh
-  }
+  /// Mở điểm danh → trả QR thật từ server
+  Future<String> generateQR(int maBuoi) => api.generateQR(maBuoi);
 
-  // ===============================
-  // Đóng điểm danh
-  // ===============================
-  Future<void> dongDiemDanh(int maBuoi) async {
-    await api.dongDiemDanh(maBuoi);
-    await clearQR(maBuoi); // xóa QR khi đóng điểm danh
-  }
-
-  // ===============================
-  // Tạo QR code cho buổi học
-  // ===============================
-  Future<void> generateQR(int maBuoi) async {
-    await api.generateQR(maBuoi);
-  }
-
-  // ===============================
-  // Xóa QR code của buổi học
-  // ===============================
-  Future<void> clearQR(int maBuoi) async {
-    await api.clearQR(maBuoi);
-  }
+  /// Đóng điểm danh
+  Future<void> clearQR(int maBuoi) => api.clearQR(maBuoi);
 }

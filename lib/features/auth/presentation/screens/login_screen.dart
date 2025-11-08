@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
-import 'package:face_attendance_flutter/core/network/api_constants.dart';
 import 'package:face_attendance_flutter/core/network/token_storage.dart';
-import 'package:face_attendance_flutter/routes/route_names.dart';
+import '../../../../routes/route_names.dart';
+import '../../data/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,56 +13,46 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final Dio _dio = Dio(BaseOptions(baseUrl: ApiConstants.baseUrl));
+  final AuthService _authService = AuthService();
 
   bool _isLoading = false;
   String? _error;
-  String _loai = 'pdt'; // đổi tuỳ module
+  String _loai = 'giangvien'; // mặc định giảng viên
 
   Future<void> _login() async {
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
-      final res = await _dio.post(
-        '/v1/auth/login',
-        data: {
-          'email': _emailController.text.trim(),
-          'matKhau': _passwordController.text.trim(),
-          'loai': _loai,
-        },
-        options: Options(headers: {'Accept': 'application/json'}),
+      final data = await _authService.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+        _loai,
       );
 
-      final data  = res.data;
-      final token = data['token'] ?? data['access_token'];
-
-      if (res.statusCode == 200 && token != null && token.toString().isNotEmpty) {
-        await TokenStorage.saveToken(token.toString()); // ✅ secure storage
-
+      if (data.containsKey('error')) {
+        setState(() => _error = data['error']);
+      } else {
+        // Lấy role và điều hướng
         final role = data['role'] ?? data['user']?['vaiTro'] ?? _loai;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đăng nhập thành công (${role.toUpperCase()})')),
-        );
 
         switch (role) {
-          case 'admin':    Navigator.pushReplacementNamed(context, RouteNames.adminDashboard); break;
-          case 'pdt':      Navigator.pushReplacementNamed(context, RouteNames.pdtDashboard);   break;
-          case 'giangvien':Navigator.pushReplacementNamed(context, RouteNames.giangvienDashboard); break;
-          case 'sinhvien': Navigator.pushReplacementNamed(context, RouteNames.sinhvienDashboard);  break;
-          default:
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Không xác định vai trò người dùng')),
-            );
+          case 'admin':
+            Navigator.pushReplacementNamed(context, RouteNames.adminDashboard);
+            break;
+          case 'pdt':
+            Navigator.pushReplacementNamed(context, RouteNames.pdtDashboard);
+            break;
+          case 'giangvien':
+            Navigator.pushReplacementNamed(context, RouteNames.giangvienDashboard);
+            break;
+          case 'sinhvien':
+            Navigator.pushReplacementNamed(context, RouteNames.sinhvienDashboard);
+            break;
         }
-      } else {
-        setState(() => _error = 'Phản hồi không hợp lệ từ server');
       }
-    } on DioException catch (e) {
-      setState(() {
-        _error = e.response?.data['error']?['message']
-            ?? e.response?.data['message']
-            ?? 'Đăng nhập thất bại (${e.response?.statusCode})';
-      });
     } catch (e) {
       setState(() => _error = 'Lỗi không xác định: $e');
     } finally {
@@ -88,7 +77,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const Text('Đăng nhập hệ thống', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 24),
-
                   DropdownButtonFormField<String>(
                     value: _loai,
                     decoration: const InputDecoration(
@@ -101,9 +89,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       DropdownMenuItem(value: 'giangvien', child: Text('Giảng viên')),
                       DropdownMenuItem(value: 'sinhvien', child: Text('Sinh viên')),
                     ],
-                    onChanged: (v) => setState(() => _loai = v ?? 'pdt'),
+                    onChanged: (v) => setState(() => _loai = v ?? 'giangvien'),
                   ),
-
                   const SizedBox(height: 16),
                   TextField(
                     controller: _emailController,
@@ -122,9 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
                   if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
-
                   const SizedBox(height: 8),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
